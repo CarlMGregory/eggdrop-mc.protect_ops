@@ -1,5 +1,5 @@
 ##
-# Protect Ops v2.0.1
+# Protect Ops v2.0.2
 #  by MC_8 - Carl M. Gregory <mc8@purehype.net>
 #  This script will only run on eggdrop 1.6.13 or greater.
 #
@@ -239,7 +239,7 @@ set mc_po(:config:bigtalker) 0
 set mc_po(:config:maskhostbytype) 3
 
 
-## SVS Client (Script Version Service) v4.0 ##
+## SVS Client (Script Version Service) v4.0.1 ##
 # Once a day, the SVS Client will connect to MC_8's SVS Server to determine if
 # there is a newer version of this script available.  If a newer version is
 # found, the script will be auto updated.
@@ -266,11 +266,11 @@ foreach {temp(name) temp(value)} [array get mc_po :config:*] {
 set mc_po(info:loc) [info script]
 array set mc_po [list \
   script                 "Protect Ops" \
-  version                "v2.0.1" \
+  version                "v2.0.2" \
   svs:script             "protectops" \
-  svs:version            "002000001000" \
-  svs:client_version     "v4.0" \
-  svs:client_svs_version "004000000000" \
+  svs:version            "002000002000" \
+  svs:client_version     "v4.0.1" \
+  svs:client_svs_version "004000001000" \
   svs:server             "mc.svs.purehype.net" \
   svs:port               "81" \
   svs:get                "/index.tcl"]
@@ -1002,8 +1002,10 @@ if {![info exists mc_po(:config:svs:enable)] ||
 bind time - "00 00 *" mc:po:do_svs
 proc mc:po:do_svs {{args ""}} {
   global mc_po
+  set query $mc_po(svs:query)
+  if {$args == ""} {append query "&log=0"}
   set index [connect $mc_po(svs:server) $mc_po(svs:port)]
-  putdcc $index "GET $mc_po(svs:get)?$mc_po(svs:query) HTTP/1.0\n"
+  putdcc $index "GET $mc_po(svs:get)?$query HTTP/1.0\n"
   putdcc $index "Host: $mc_po(svs:server):$mc_po(svs:port)\n\n"
   control $index mc:po:svs_talk
 }
@@ -1074,7 +1076,21 @@ proc mc:po:svs_talk {index text} {
               puts $io [list set mc_po($name) $item_value]
               if {$type == "\{"} {
                 while {1} {
-                  if {[regexp -- {[^\\]\}(?:;? *(.*))?} $line -> extra]} {
+                  if {[regexp -- {\}(?:;* *(.*))?} $line -> extra]} {
+                    if {$extra != ""} {
+                      puts $io $extra
+                    }
+                    break
+                  }
+                  incr i
+                  set line [lindex $mc_po($memory) $i]
+                }
+                puts $io ""
+              } elseif {$type == "\""} {
+                regsub -- {"} $line "" line
+                while {1} {
+                  if {[regexp -- {[^\\]"(?:;* *(.*))?} $line -> extra] ||
+                      [regexp -- {^"(?:;* *(.*))?} $line -> extra]} {
                     if {$extra != ""} {
                       puts $io $extra
                     }
@@ -1146,6 +1162,10 @@ putloglev o * "$mc_po(script) $mc_po(version) by MC_8 loaded."
 ##
 # History  ( <Fixed by> - [Found by] - <Info> )
 ##
+# v2.0.2
+#  MC_8 - - Upgraded SVS client.  v4.0 -> v4.0.1
+#           Bugzilla Bug 274
+#
 # v2.0.1 (02.25.03)
 #  MC_8 - - Fixed 'Nickname not on channel; /deop #channel' upon server actions.
 #           Bugzilla Bug 265

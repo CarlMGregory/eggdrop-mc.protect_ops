@@ -1,98 +1,1247 @@
 ##
-# Protect Ops v1.6
+# Protect Ops v2.0
 #  by MC_8 - Carl M. Gregory <mc8@purehype.net>
-#  This script will only run on eggdrop 1.5.5 or greater.
+#  This script will only run on eggdrop 1.6.13 or greater.
 #
-# My SVS Website - http://mc.purehype.net:81/
+#    R.I.P. Mom, To always be remembered; Nancy Marie Gregory.
+#
+# My Website - http://mc.purehype.net:81/
 # Have a bug?  http://mc.purehype.net:81/bugzilla/
-# TCL Mailing list - http://mc.purehype.net:81/maillist/
 ##
 
 ##
-# This script basiclly does what 'chanset''s 'protectops' and 
-# 'dontkickops' does, but with more options and customized reactions.  
-# A "super protectops" as someone called it, wording in relation to 
-# slennox's script "super bitch".
+# Description
+##
+# This script basically does what 'chanset''s 'protectops' and 'dontkickops'
+# does, but with more options and customized reactions.  A "super protectops" as
+# someone called it, wording in relation to slennox's script "super bitch".
 ##
 
 ##
-# HISTORY  ( <Fixed by> - [Found by] - <Info> )
+# Commands
 ##
+# DCC:
+#
+#   chanset <#channel> <+/->mc.protect_ops
+#     This will enable (+) or disable (-) the script for the specific
+#     channel.
+##
+
+##
+# Configuration
+##
+#
+
+## Kick protection settings.
+
+# What op'd users do you want to protect from op kick's?  If you want to protect
+# every op that is currently op'd, regardless if there a registered op in the
+# bot, then set this to "-|-".  Set this to "" to disable kick protection.  Flag
+# syntax, <global>|<channel>
+set mc_po(:config:kick:protect) "o|o"
+
+# What do you want to do upon other op kicking an op?  Seperate each command
+# with a new line.
+# Valid commands are:
+#   /msg <nick|channel> <text>
+#   /notice <nick|channel> <text>
+#   /ban <channel> <nick> [time [reason]]
+#     If time is specified;
+#        0 = Perm ban.
+#        Any number greater than 0 is the ban expiration in min's.
+#     If the number is greater than 0, the reason will be put into the
+#     bot's internal banlist record as the reason for adding the ban.  Otherwise
+#     the ban is considered a server ban and reason is just ignored.  Also, if
+#     you want the ban to be "sticky" (read up on '.help stick') then append the
+#     time with an '!' (exclamation point).
+#   /kick <channel> <nick>
+#   /deop <channel> <nick>
+#   /raw <raw_irc_code>
+#     See: http://www.user-com.undernet.org/documents/rfc1459.txt
+#   /chattr <handle> <flag changes> [channel]
+#     This acts exactly the same way as a '.chattr' in the DCC console, see
+#     '.help chattr'.
+#   /note <handle> <text>
+#     Sends an internal note via the notes module to <handle>.
+#   /flagnote <flag [channel]> <text>
+#     Sends an internal note via the notes module to all whom match the
+#     specified flag(s).  Flag format is global|channel.
+# Valid replacement variables are;
+#   %botnick       - The bot's IRC nickname.
+#   %channel       - The channel the action took place in.
+#   %reason        - The reason specified for the action.
+#   %nick          - The IRC nickname that performed the action.
+#   %ident         - The ident of the IRC nickname that performed the action.
+#   %host          - The host of the IRC nickname that performed the action.
+#   %handle        - The handle of the IRC nickname that performed the action.
+#   %victim_nick   - The IRC nickname of the victim.
+#   %victim_ident  - The ident of the victim.
+#   %victim_host   - The host of the victim.
+#   %victim_handle - The handle of the victim.
+set mc_po(:config:kick:do) {
+  /deop %channel %nick
+  /chattr %handle -mtfo|-mtfo %channel
+  /msg %nick You just kicked %victim_nick, that's an op!
+}
+
+
+## Ban protection settings.
+
+# What op'd users do you want to protect from op ban's?  If you want to protect
+# every op that is currently op'd, regardless if there a registered op in the
+# bot, then set this to "-|-".  Set this to "" to disable ban protection.  Flag
+# syntax: <global>|<channel>
+set mc_po(:config:ban:protect) "o|o"
+
+# What do you want to do upon other op banning an op?  Seperate each command
+# with a new line.
+# Valid commands are:
+#   /msg <nick|channel> <text>
+#   /notice <nick|channel> <text>
+#   /ban <channel> <nick> [time [reason]]
+#     If time is specified;
+#        0 = Perm ban.
+#        Any number greater than 0 is the ban expiration in min's.
+#     If the number is greater than 0, the reason will be put into the
+#     bot's internal banlist record as the reason for adding the ban.  Otherwise
+#     the ban is considered a server ban and reason is just ignored.  Also, if
+#     you want the ban to be "sticky" (read up on '.help stick') then append the
+#     time with an '!' (exclamation point).
+#   /kick <channel> <nick>
+#   /deop <channel> <nick>
+#   /raw <raw_irc_code>
+#     See: http://www.user-com.undernet.org/documents/rfc1459.txt
+#   /chattr <handle> <flag changes> [channel]
+#     This acts exactly the same way as a '.chattr' in the DCC console, see
+#     '.help chattr'.
+#   /note <handle> <text>
+#     Sends an internal note via the notes module to <handle>.
+#   /flagnote <flag [channel]> <text>
+#     Sends an internal note via the notes module to all whom match the
+#     specified flag(s).  Flag format is global|channel.
+#   /reverse [option]
+#     Removes the ban set.  If option is set to 'valid_only', it will only
+#     reverse the ban if the user that matches the ban is a valid op (registered
+#     with the bot and has the 'o' flag).
+# Valid replacement variables are;
+#   %botnick       - The bot's IRC nickname.
+#   %channel       - The channel the action took place in.
+#   %nick          - The IRC nickname that performed the action.
+#   %ident         - The ident of the IRC nickname that performed the action.
+#   %host          - The host of the IRC nickname that performed the action.
+#   %handle        - The handle of the IRC nickname that performed the action.
+#   %victim_nick   - The IRC nickname of the victim.
+#   %victim_ident  - The ident of the victim.
+#   %victim_host   - The host of the victim.
+#   %victim_handle - The handle of the victim.
+#   %banmask       - The banmask that triggered this.
+set mc_po(:config:ban:do) {
+  /deop %channel %nick
+  /chattr %handle -mtfo|-mtfo %channel
+  /msg %nick You just banned %victim_nick, that's an op!
+  /reverse valid_only
+}
+
+
+## Deop protection settings.
+
+# What op'd users do you want to protect from op deop's?  If you want to protect
+# every op that is currently op'd, regardless if there a registered op in the
+# bot, then set this to "-|-".  Set this to "" to disable deop protection.  Flag
+# syntax: <global>|<channel>
+set mc_po(:config:deop:protect) "o|o"
+
+# What do you want to do upon other op deopping an op?  Seperate each command
+# with a new line.
+# Valid commands are:
+#   /msg <nick|channel> <text>
+#   /notice <nick|channel> <text>
+#   /ban <channel> <nick> [time [reason]]
+#     If time is specified;
+#        0 = Perm ban.
+#        Any number greater than 0 is the ban expiration in min's.
+#     If the number is greater than 0, the reason will be put into the
+#     bot's internal banlist record as the reason for adding the ban.  Otherwise
+#     the ban is considered a server ban and reason is just ignored.  Also, if
+#     you want the ban to be "sticky" (read up on '.help stick') then append the
+#     time with an '!' (exclamation point).
+#   /kick <channel> <nick>
+#   /deop <channel> <nick>
+#   /raw <raw_irc_code>
+#     See: http://www.user-com.undernet.org/documents/rfc1459.txt
+#   /chattr <handle> <flag changes> [channel]
+#     This acts exactly the same way as a '.chattr' in the DCC console, see
+#     '.help chattr'.
+#   /note <handle> <text>
+#     Sends an internal note via the notes module to <handle>.
+#   /flagnote <flag [channel]> <text>
+#     Sends an internal note via the notes module to all whom match the
+#     specified flag(s).  Flag format is global|channel.
+#   /reverse [option]
+#     Re-ops the victim.  If option is set to 'valid_only', it will only reverse
+#     the op status if the user is a valid op (registered with the bot and has
+#     the 'o' flag).
+# Valid replacement variables are;
+#   %botnick       - The bot's IRC nickname.
+#   %channel       - The channel the action took place in.
+#   %nick          - The IRC nickname that performed the action.
+#   %ident         - The ident of the IRC nickname that performed the action.
+#   %host          - The host of the IRC nickname that performed the action.
+#   %handle        - The handle of the IRC nickname that performed the action.
+#   %victim_nick   - The IRC nickname of the victim.
+#   %victim_ident  - The ident of the victim.
+#   %victim_host   - The host of the victim.
+#   %victim_handle - The handle of the victim.
+set mc_po(:config:deop:do) {
+  /deop %channel %nick
+  /chattr %handle -mtfo|-mtfo %channel
+  /msg %nick You just deopped %victim_nick, that's an op!
+  /reverse valid_only
+}
+
+
+## Miscellaneous settings.
+
+# What flagged users do you want to exempt from this script?  Set to "" to exempt
+# no one.
+set mc_po(:config:exempt) "b|"
+
+# What other flagged users do you want to protect as well?  This is useful if
+# the matching flagged user is not op'd, the script will still protect him/her.
+# Set this to "" to disable.  Flag syntax: <global>|<channel>
+set mc_po(:config:also:protect) "ov|ov"
+
+# [0=no/1=yes] If the bot is not opped, do you want to perform the *:do command
+# setup above?  In respects to /msg, /notice, /ban, and /kick -- with proper
+# respects to the channels (/msg and /notice being the channel the action took
+# place in -- the others being the channels specified).
+set mc_po(:config:bigtalker) 0
+
+# How do you want to mask hosts?  This is used for banning and adding
+# a user to the userfile (if either enabled).
+#         0 - *!user@host.domain
+#         1 - *!*user@host.domain
+#         2 - *!*@host.domain
+#         3 - *!*user@*.domain
+#         4 - *!*@*.domain
+#         5 - nick!user@host.domain
+#         6 - nick!*user@host.domain
+#         7 - nick!*@host.domain
+#         8 - nick!*user@*.domain
+#         9 - nick!*@*.domain
+#       You can also specify a type of 10-19 which corresponds to types 0-9,
+#       using this sub rule;  If host.domain is a(n)-
+#         name - Instead of using a * wildcard to replace portions of the
+#                host.domain, it replaces the numbers in the host.domain with a
+#                '?' (question mark) wildcard.
+#         ip   - It will mask as normal, with no '?' (question mark)
+#                replacements as does hostname.
+set mc_po(:config:maskhostbytype) 3
+
+
+## SVS Client (Script Version Service) v4.0 ##
+# Once a day, the SVS Client will connect to MC_8's SVS Server to determine if
+# there is a newer version of this script available.  If a newer version is
+# found, the script will be auto updated.
+
+# [0=no/1=yes] Do you want to enable auto updating?
+set mc_po(:config:svs:enable) 1
+
+
+#
+##
+
+##
+# Done with configurations, do not edit past here unless you know TCL.
+##
+#
+
+#Script:mc_po
+
+catch {unset temp}
+set mc_po(info:vars) ""
+foreach {temp(name) temp(value)} [array get mc_po :config:*] {
+  lappend mc_po(info:vars) [list $temp(name) $temp(value)]
+}
+set mc_po(info:loc) [info script]
+array set mc_po [list \
+  script                 "Protect Ops" \
+  version                "v2.0" \
+  svs:script             "protectops" \
+  svs:version            "002000000000" \
+  svs:client_version     "v4.0" \
+  svs:client_svs_version "004000000000" \
+  svs:server             "mc.svs.purehype.net" \
+  svs:port               "81" \
+  svs:get                "/index.tcl"]
+set mc_po(svs:query)    "svs=$mc_po(svs:script)&"
+append mc_po(svs:query) "version=$mc_po(svs:version)&"
+append mc_po(svs:query) "svs_version=$mc_po(svs:client_svs_version)"
+
+if {![info exists numversion] || ($numversion < "1061300")} {
+  set temp(tag) "$mc_po(script) $mc_po(version)"
+ putloglev o * "$temp(tag) by MC_8 will only work on eggdrop 1.6.13 or greater."
+ putloglev o * "$temp(tag)  will not work with eggdrop $version."
+ putloglev o * "$temp(tag)  not loaded."
+  return 1
+}
+
+setudef flag mc.protect_ops
+
+# Error system, v3.0
+proc mc:po:error {command error arg} {
+  global mc_po version lastbind errorInfo
+  putloglev o * "Error in script $mc_po(script) $mc_po(version)."
+  putloglev o * "    Error System: v3.0"
+  putloglev o * \
+    "       Last Bind: [expr {[info exists lastbind]?$lastbind:"-NULL-"}]"
+  putloglev o * "         Command: $command"
+  putloglev o * "       Arguments: $arg"
+  putloglev o * "       Error Msg: $error"
+  putloglev o * \
+    "    Egg. Version: [expr {[info exists version]?$version:"-NULL-"}]"
+  putloglev o * "     TCL Version: [info tclversion]"
+  putloglev o * "  TCL Patchlevel: [info patchlevel]"
+  putloglev o * "*** Please submit this bug so MC_8 can fix it.  Visit"
+  putloglev o * \
+    "*** http://mc.purehype.net:81/bugzilla/ to properly report the bug."
+  putloglev o * \
+    "*** Please include ALL info. in the bug report, including the next(s)."
+  error $errorInfo
+}
+
+proc mc:po:errchk {command arg} {
+  if {![catch {eval $command $arg} return]} {return $return}
+  mc:po:error $command $return $arg
+  return 0
+}
+# ^
+
+
+bind join - * mc:po:bind:join
+proc mc:po:bind:join {nick uhost handle channel} {
+  return [mc:po:errchk mc:po:bind:join_ [list $nick $uhost $handle $channel]]
+}
+proc mc:po:bind:join_ {nick uhost handle channel} {
+  if {![isbotnick $nick]} {mc:po:list ial add $nick $uhost $channel}
+}
+
+bind raw - 315 mc:po:bind:raw
+proc mc:po:bind:raw {from keyword arg} {
+  return [mc:po:errchk mc:po:bind:raw_ [list $from $keyword $arg]]
+}
+proc mc:po:bind:raw_ {from keyword arg} {
+  set channel [lindex [split $arg] 1]
+  if {![validchan $channel]} {return 0}
+  mc:po:list ial remove "" $channel
+  foreach temp(user) [chanlist $channel] {
+    if {[isbotnick $temp(user)]} {continue}
+    mc:po:list ial add $temp(user) [getchanhost $temp(user) $channel] $channel
+  }
+  return 0
+}
+
+bind part - * mc:po:bind:part
+proc mc:po:bind:part {nick uhost handle channel text} {
+  return [mc:po:errchk mc:po:bind:part_ \
+    [list $nick $uhost $handle $channel $text]]
+}
+proc mc:po:bind:part_ {nick uhost handle channel text} {
+  if {[isbotnick $nick]} {mc:po:list ial remove "" $channel} \
+  else {mc:po:list ial schedule_remove $nick $channel 30}
+}
+
+bind sign - * mc:po:bind:sign
+proc mc:po:bind:sign {nick uhost handle channel reason} {
+  return [mc:po:errchk mc:po:bind:sign_ \
+    [list $nick $uhost $handle $channel $reason]]
+}
+proc mc:po:bind:sign_ {nick uhost handle channel reason} {
+  if {[isbotnick $nick]} {mc:po:list ial remove "" $channel} \
+  else {mc:po:list ial schedule_remove $nick $channel 30}
+}
+
+bind kick - * mc:po:bind:kick
+proc mc:po:bind:kick {nick uhost handle channel target reason} {
+  return [mc:po:errchk mc:po:bind:kick_ \
+    [list $nick $uhost $handle $channel $target $reason]]
+}
+proc mc:po:bind:kick_ {nick uhost handle channel target reason} {
+  if {[isbotnick $target]} {mc:po:list ial remove "" $channel} \
+  else {
+    mc:po:list eval $nick $channel kick $target $reason
+    mc:po:list ial schedule_remove $target $channel 30
+  }
+}
+
+bind mode - * mc:po:bind:mode
+proc mc:po:bind:mode {nick uhost handle channel mode victim} {
+  return [mc:po:errchk mc:po:bind:mode_ \
+    [list $nick $uhost $handle $channel $mode $victim]]
+}
+proc mc:po:bind:mode_ {nick uhost handle channel mode victim} {
+  if {[isbotnick $nick]} {return 0}
+  switch -- $mode {
+    "+b" {
+      foreach temp(user) [mc:po:list ial find $channel $victim] {
+        set temp() [mc:po:list eval $nick $channel ban [lindex $temp(user) 0] \
+          [lindex $temp(user) 1] $victim]
+        if {$temp() == "1"} {
+          # Action taken.
+          break
+        }
+      }
+    }
+    "-o" {mc:po:list eval $nick $channel deop $victim}
+  }
+}
+
+bind nick - * mc:po:bind:nick
+proc mc:po:bind:nick {nick uhost handle channel newnick} {
+  return [mc:po:errchk mc:po:bind:nick_ \
+    [list $nick $uhost $handle $channel $newnick]]
+}
+proc mc:po:bind:nick_ {nick uhost handle channel newnick} {
+  if {![isbotnick $newnick]} {
+    mc:po:list ial remove $nick $channel
+    mc:po:list ial add $newnick $uhost $channel
+  }
+}
+
+
+proc mc:po:list {command {args ""}} {
+  return [mc:po:errchk mc:po:list_ "[list $command] $args"]
+}
+proc mc:po:list_ {command args} {
+  global mc_po
+  switch -- $command {
+
+    "ial" {
+      # Ial format; nick uhost channel
+      if {![info exists mc_po(:ial:)]} {set mc_po(:ial:) ""}
+      set temp(command) [lindex $args 0]
+      set args [lrange $args 1 end]
+      switch -- $temp(command) {
+
+        "add" {
+          # mc:po:list ial add <nick> <uhost> <channel>
+          mc:po:unlist $args nick uhost channel
+          mc:po:list ial remove $nick $channel
+          lappend mc_po(:ial:) [list $nick $uhost $channel]
+        }
+
+        "remove" {
+          # mc:po:list ial remove [nick] [channel]
+          mc:po:unlist $args {nick ""} {channel ""}
+
+          set temp(new_list) ""
+          foreach temp(entry) [mc:po:list ial list] {
+            set temp(nick) [string tolower [lindex $temp(entry) 0]]
+            set temp(channel) [string tolower [lindex $temp(entry) 2]]
+            if {(($nick == "") || ($temp(nick) == [string tolower $nick])) &&
+                (($channel == "") ||
+                 ($temp(channel) == [string tolower $channel]))} {
+              mc:po:list ial kill_schedule $temp(nick) $temp(channel)
+              continue
+            }
+            lappend temp(new_list) $temp(entry)
+          }
+          set mc_po(:ial:) $temp(new_list)
+        }
+
+        "find" {
+          # mc:po:list ial find <channel> <nick!user@host*>
+          mc:po:unlist $args channel nuhost_masked
+          set nuhost_masked [string tolower $nuhost_masked]
+
+          set temp(return) ""
+          foreach temp(entry) [mc:po:list ial list $channel] {
+            set temp(nick) [string tolower [lindex $temp(entry) 0]]
+            set temp(uhost) [string tolower [lindex $temp(entry) 1]]
+            if {[string match $nuhost_masked $temp(nick)!$temp(uhost)]} {
+              lappend temp(return) [lrange $temp(entry) 0 1]
+            }
+          }
+          return $temp(return)
+        }
+
+        "list" {
+          # mc:po:list ial list [channel]
+          mc:po:unlist $args {channel ""}
+
+          if {$channel == ""} {return $mc_po(:ial:)}
+
+          set temp(return) ""
+          foreach temp(entry) $mc_po(:ial:) {
+            set temp(channel) [string tolower [lindex $temp(entry) 2]]
+            if {$temp(channel) == [string tolower $channel]} {
+              lappend temp(return) $temp(entry)
+            }
+          }
+          return $temp(return)
+        }
+
+        "schedule_remove" {
+          # mc:po:list ial schedule_remove <nick> <channel> <seconds>
+          mc:po:unlist $args nick channel time
+          set nick [string tolower $nick]
+          set channel [string tolower $channel]
+
+          set temp(list) [list mc:po:list remove $nick $channel]
+
+          foreach temp(utimer) [utimers] {
+            if {[lsearch -exact $temp(utimer) $temp(list)] == "1"} {
+              return 0
+            }
+          }
+
+          utimer $time $temp(list)
+        }
+
+        "kill_schedule" {
+          # mc:po:list ial kill_schedule <nick> <channel>
+          mc:po:unlist $args nick channel
+          set nick [string tolower $nick]
+          set channel [string tolower $channel]
+
+          set temp(list) [list mc:po:list remove $nick $channel]
+
+          foreach temp(utimer) [utimers] {
+            if {[lsearch -exact $temp(utimer) $temp(list)] == "1"} {
+              killutimer [lindex $temp(utimer) 2]
+              break
+            }
+          }
+        }
+
+      }
+    }
+
+    "is_protected" {
+      # mc:po:list is_protected <nick> <handle> <channel> <type> \
+      #   <punisher_handle>
+      mc:po:unlist $args nick handle channel type punisher_handle
+      global botnet-nick
+
+      if {
+        ([mc:po:chanflag $channel mc.protect_ops]) &&
+        ((($nick != "") && ([onchan $nick $channel])) ||
+         ($nick == "")) &&
+        ($punisher_handle != ${botnet-nick}) &&
+        ((($mc_po(:config:${type}:protect) == "-|-") &&
+          ((($type == "deop") && ([wasop $nick $channel])) ||
+           ((($type == "kick") || ($type == "ban")) &&
+            ([isop $nick $channel])))) ||
+         (($mc_po(:config:${type}:protect) != "") &&
+          ([matchattr $handle $mc_po(:config:${type}:protect) $channel])) ||
+         (($mc_po(:config:also:protect) != "") &&
+          ([matchattr $handle $mc_po(:config:also:protect) $channel]))) &&
+        (($mc_po(:config:exempt) != "") &&
+         (![matchattr $punisher_handle $mc_po(:config:exempt) $channel]))
+      } {return 1} else {return 0}
+    }
+
+    "eval" {
+      # mc:po:list eval <nick> <channel> kick <target_nick> [reason]
+      # mc:po:list eval <nick> <channel> deop <target_nick>
+      # mc:po:list eval <nick> <channel> ban  <target_nick> <target_uhost> \
+      #   <banmask>
+      global botnick botnet-nick
+      mc:po:unlist $args nick channel type target_nick {reason ""} {banmask ""}
+
+      if {$nick != ""} {
+        regexp -- {^(.*)@(.*)$} [getchanhost $nick $channel] -> ident host
+        set handle [nick2hand $nick $channel]
+      } else {
+        set ident ""
+        set host ""
+        set handle ""
+      }
+
+      if {$type == "ban"} {
+        regexp -- {^(.*)@(.*)$} $reason -> target_ident target_host
+        set target_handle [finduser $target_nick!$reason]
+        set reason ""
+      } else {
+        regexp -- {^(.*)@(.*)$} [getchanhost $target_nick $channel] -> \
+          target_ident target_host
+        set target_handle [nick2hand $target_nick $channel]
+      }
+
+      if {
+   ![mc:po:list is_protected $target_nick $target_handle $channel $type $handle]
+      } {return 0}
+
+      set temp(return_number) 1
+
+      set temp(do) [mc:po:replace -- $mc_po(:config:${type}:do) [list \
+        %botnick       $botnick      \
+        %channel       $channel      \
+        %reason        $reason       \
+        %nick          $nick         \
+        %ident         $ident        \
+        %host          $host         \
+        %handle        $handle       \
+        %victim_nick   $target_nick  \
+        %victim_ident  $target_ident \
+        %victim_host   $target_host  \
+        %victim_handle $target_handle\
+        %banmask       $banmask]]
+      foreach temp(command) [split $temp(do) \n] {
+        set temp(command) [string trim $temp(command) " \t"]
+        if {$temp(command) == ""} {continue}
+        set temp(command) [split $temp(command)]
+        set temp(args) [lrange $temp(command) 1 end]
+        set temp(command) [string tolower [lindex $temp(command) 0]]
+        switch -- $temp(command) {
+          "/msg" {
+            if {![botisop $channel] && !$mc_po(:config:bigtalker)} {continue}
+
+            set temp(to) [lindex $temp(args) 0]
+            if {$temp(to) == ""} {continue} ;# Server action?
+            putserv "PRIVMSG $temp(to) :[join [lrange $temp(args) 1 end]]"
+          }
+          "/notice" {
+            if {![botisop $channel] && !$mc_po(:config:bigtalker)} {continue}
+
+            set temp(to) [lindex $temp(args) 0]
+            if {$temp(to) == ""} {continue} ;# Server action?
+            putserv "NOTICE $temp(to) :[join [lrange $temp(args) 1 end]]"
+           }
+          "/ban" {
+            set temp(channel) [lindex $temp(args) 0]
+            set temp(nick) [lindex $temp(args) 1]
+            set temp(time) [lindex $temp(args) 2]
+            set temp(reason) [lindex $temp(args) 3]
+
+            if {$temp(nick) == ""} {continue} ;# Server action?
+
+            if {![validchan $temp(channel)]} {
+              set temp() "$temp(command) [join $temp(args)]"
+              putloglev o * "$mc_po(script): Invalid channel; $temp()"
+              continue
+            }
+
+            if {![onchan $temp(nick) $temp(channel)]} {
+              set temp() "$temp(command) [join $temp(args)]"
+              putloglev o * "$mc_po(script): Nickname not on channel; $temp()"
+              continue
+            }
+
+            if {![botisop $temp(channel)] && !$mc_po(:config:bigtalker)} {
+              continue
+            }
+
+            set temp(banmask) [mc:po:maskhostbytype [getchanhost $temp(nick)] \
+              $mc_po(:config:maskhostbytype)]
+
+            if {$time == ""} {
+              putserv "MODE $temp(channel) +b $temp(banmask)"
+              continue
+            }
+
+            set temp(sticky) [string match *! $temp(time)]
+            regexp -- {^(.*)!?$} $temp(time) -> temp(time)
+
+            if {[regexp -- {[^0-9]} $temp(time)]} {
+              set temp() "$temp(command) [join $temp(args)]"
+              putloglev o * "$mc_po(script): Invalid time format; $temp()"
+              continue
+            }
+
+            newchanban $temp(channel) $temp(banmask) ${botnet-nick} $reason \
+              $temp(time) [expr {$temp(sticky)?"sticky":"none"}]
+           }
+          "/kick" {
+            set temp(channel) [lindex $temp(args) 0]
+            set temp(nick) [lindex $temp(args) 1]
+
+            if {![validchan $temp(channel)]} {
+              set temp() "$temp(command) [join $temp(args)]"
+              putloglev o * "$mc_po(script): Invalid channel; $temp()"
+              continue
+            }
+
+            if {![onchan $temp(nick) $temp(channel)]} {
+              set temp() "$temp(command) [join $temp(args)]"
+              putloglev o * "$mc_po(script): Nickname not on channel; $temp()"
+              continue
+            }
+
+            if {![botisop $temp(channel)] && !$mc_po(:config:bigtalker)} {
+              continue
+            }
+
+            putserv "KICK $temp(channel) $temp(nick) :$reason"
+          }
+          "/deop" {
+            set temp(channel) [lindex $temp(args) 0]
+            set temp(nick) [lindex $temp(args) 1]
+
+            if {![validchan $temp(channel)]} {
+              set temp() "$temp(command) [join $temp(args)]"
+              putloglev o * "$mc_po(script): Invalid channel; $temp()"
+              continue
+            }
+
+            if {![onchan $temp(nick) $temp(channel)]} {
+              set temp() "$temp(command) [join $temp(args)]"
+              putloglev o * "$mc_po(script): Nickname not on channel; $temp()"
+              continue
+            }
+
+            if {![botisop $temp(channel)] && !$mc_po(:config:bigtalker)} {
+              continue
+            }
+            if {![isop $temp(nick) $temp(channel)]} {continue}
+
+            putserv "MODE $temp(channel) -o $temp(nick)"
+          }
+          "/chattr" {
+            set temp(handle) [lindex $temp(args) 0]
+            set temp(flags) [lindex $temp(args) 1]
+            set temp(channel) [lindex $temp(args) 2]
+
+            if {($temp(handle) == "") || ($temp(handle) == "*")} {
+              continue
+            }
+
+            if {(![validchan $temp(channel)]) && ($temp(channel) != "")} {
+              set temp() "$temp(command) [join $temp(args)]"
+              putloglev o * "$mc_po(script): Invalid channel; $temp()"
+              continue
+            }
+
+            if {$temp(channel) == ""} {chattr $temp(handle) $temp(flags)} \
+            else {chattr $temp(handle) $temp(flags) $temp(channel)}
+          }
+          "/raw" {
+            putserv [join $temp(args)]
+          }
+          "/note" {
+            set temp(handle) [lindex $temp(args) 0]
+            set temp(message) [join [lrange $temp(args) 1 end]]
+
+            if {![validuser $temp(handle)]} {
+              set temp() "$temp(command) [join $temp(args)]"
+              putloglev o * "$mc_po(script): Invalid handle; $temp()"
+              continue
+            }
+
+            if {[sendnote ${botnet-nick} $temp(handle) $temp(message)] == "3"} {
+              set temp() "note box too full"
+              putloglev o * \
+                "$mc_po(script): Cannot send note to $temp(handle), $temp()."
+            }
+          }
+          "/flagnote" {
+            set temp(flag) [lindex $temp(args) 0]
+            set temp(channel) [lindex $temp(args) 1]
+            set temp(message) [join [lrange $temp(args) 2 end]]
+            if {![validchan $temp(channel)]} {
+              set temp(channel) ""
+              set temp(message) [join [lrange $temp(args) 1 end]]
+            }
+
+            if {$temp(channel) == ""} {
+              set temp(userlist) [userlist $temp(flag)]
+            } else {
+              set temp(userlist) [userlist $temp(flag) $temp(channel)]
+            }
+
+            foreach temp(handle) $temp(userlist) {
+              if {
+                [sendnote ${botnet-nick} $temp(handle) $temp(message)] == "3"
+              } {
+                set temp() "note box too full"
+                putloglev o * \
+                  "$mc_po(script): Cannot send note to $temp(handle), $temp()."
+              }
+            }
+          }
+          "/reverse" {
+            if {![regexp {^(ban|deop)$} $type]} {continue}
+
+            set temp(option) [lindex $temp(args) 0]
+
+            if {($temp(option) == "valid_only") &&
+                (![matchattr $target_handle o|o $channel])} {
+              if {$type == "ban"} {set temp(return_number) 0}
+              continue
+            }
+
+            set temp(return_number) 1
+            if {$type == "ban"} {putserv "MODE $channel -b $banmask"} \
+            else {putserv "MODE $channel +o $target_nick"}
+          }
+          default {
+            set temp() "$temp(command) [join $temp(args)]"
+            putloglev o * "$mc_po(script): Unknown command; $temp()"
+          }
+        }
+      }
+      return $temp(return_number)
+    }
+  }
+}
+
+
+## More Tools quick procs.
+## -- http://mc.purehype.net:81/script_info.tcl?script=moretools
+
+# badargs <args> <min_llength> <max_llength|end> <argNames>
+#     version:
+#       v1.0
+proc mc:po:badargs {{args ""}} {
+  if {[llength $args] < 4} {
+    error {
+   wrong # args: should be "mc:po:badargs args min_llength max_llength argNames"
+    }
+  }
+
+  set index 0
+  foreach varName [list args min max names] {
+    set check_$varName [lindex $args $index]
+    incr index
+  }
+
+  if {[regexp -- {([^0-9])} $check_min -> bad]} {
+    error "bad number \"$bad\" in: $check_min"
+  }
+  if {[regexp -- {([^0-9])} $check_max -> bad] && ($check_max != "end")} {
+    error "bad number \"$bad\" in: $check_max"
+  }
+
+  # Make sure $check_args is in list format, if not then make it so.
+  # Were not going to use 2list here, don't want to evoke a 'too many nested
+  # calls to Tcl_EvalObj' error since '2list' uses on this proc.
+  if {[catch {llength $check_args} llength]} {
+    set check_args [split $check_args]
+    set llength $check_args
+  }
+
+  if {($llength < $check_min) || (($llength != "end") &&
+      ($llength > $check_max))} {
+    if {[info level] == "1"} {return 1}
+    error "wrong # args: should be \"[lindex [info level -1] 0] $check_names\""
+  }; return 0
+}
+
+# unlist <argsList> [varName1] [varName2] ... [varNameN]
+#     version:
+#       v1.0
+proc mc:po:unlist {{args ""}} {
+  mc:po:badargs $args 1 end "argsList ?varName varName ...?"
+  set argList [lindex $args 0]
+  set argList [expr {([catch {llength $argList}])?[split $argList]:$argList}]
+  set argNames [lrange $args 1 end]
+  if {![llength $argNames]} {
+    return [expr {(![catch {llength $argList}])?
+      [join $argList]:$argList}]
+  }
+  for {set index 0} {$index < [llength $argNames]} {incr index 1} {
+    set argName     [lindex $argNames $index]
+    set argListItem [lindex $argList  $index]
+
+    set argName_ [expr {([catch {llength $argName}])?[split $argName]:$argName}]
+    set setTo   [lindex $argName_ 1]
+    set argName [lindex $argName_ 0]
+
+    if {$argName == ""} {continue}
+
+    upvar 1 $argName var
+
+    if {[expr $index+1] > [llength $argList]} {
+      if {[llength $argName_] == "2"} {set var $setTo}
+    } else {
+      if {$argName == "args"} {
+        set var [lrange $argList $index end]
+        incr index [expr [llength $var]-1]
+      } else {set var $argListItem}
+    }
+  }; return $index
+}
+
+# 2list <text>
+#     version:
+#       v1.0
+proc mc:po:2list {{args ""}} {
+  mc:po:badargs $args 1 1 "text"
+  mc:po:unlist $args text
+
+  return [expr {([catch {llength $text}])?[split $text]:$text}]
+}
+
+# replace [switches] <text> <substitutions>
+#     version:
+#       v1.3
+proc mc:po:replace {{args ""}} {
+  mc:po:badargs $args 2 4 "?switches? text substitutions"
+  set switches ""
+  for {set i 0} {[string match -* [set arg [lindex $args $i]]]} {incr i} {
+    if {![regexp -- {^-(nocase|-)$} $arg -> switch]} {
+      error "bad switch \"$arg\": must be -nocase, or --"
+    }
+    if {$switch == "-"} {
+      incr i
+      break
+    }; lappend switches $switch
+  }
+  set nocase [expr {([lsearch -exact $switches "nocase"] >= "0") ? 1 : 0}]
+  set text [lindex $args $i]
+  set substitutions [lindex $args [expr $i+1]]
+  mc:po:badargs [lrange $args $i end] 2 2 "?switches? text substitutions"
+
+  # Check to see if $substitutions is in list format, if not make it so.
+  set substitutions [mc:po:2list $substitutions]
+
+  if {[info tclversion] >= "8.1"} {
+    return [expr {($nocase)?
+      [string map -nocase $substitutions $text]:
+      [string map $substitutions $text]}]
+  }
+
+  set re_syntax {([][\\\*\+\?\{\}\,\(\)\:\.\^\$\=\!\|])}
+  foreach {a b} $substitutions {
+    regsub -all -- $re_syntax $a {\\\1} a
+    if {$nocase} {regsub -all -nocase -- $a $text $b text} \
+    else {regsub -all -- $a $text $b text}
+  }; return $text
+}
+
+# maskhostbytype <nick!ident@host.domain> [type]
+#     version:
+#       v2.1
+proc mc:po:maskhostbytype {{args ""}} {
+  mc:po:badargs $args 1 2 "nick!ident@host.domain ?type?"
+  mc:po:unlist $args nuhost type
+
+  set type [expr {($type == "")?5:$type}]
+  if {![regexp -- {^1?[0-9]$} $type]} {
+    set valid "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 {or 19}"
+    error "bad type \"$type\": must be [join $valid ", "]"
+  }
+
+  # Define the maximum length the ircd allows for an ident.  Standard is 9,
+  # however I made it to a variable incase someone wants to change it up.
+  set ident_max-length 9
+
+  # Define the maximum length the ircd allows for a hostname/ ip.  Standard is
+  # 63, however I made it to a variable incase someone wants to change it up.
+  set host_max-length 63
+
+  if {![regexp -- {^(.*[^!])!((.*)@(.*))$} $nuhost -> nick uhost ident host]} {
+    error "invalid nick!ident@host.domain: $nuhost"
+  }
+
+  set maskhost 1
+  if {[string length $type] == "2"} {
+    # Type must be 10-19.
+    if {[info tclversion] < "8.1"} {
+      set re_syntax_1 {([12][0-9][0-9]|[1-9][0-9]|[1-9])}
+      set re_syntax_2 {([12][0-9][0-9]|[1-9][0-9]|[0-9])}
+    } else {
+      set re_syntax_1 {([12]\d{2}|[1-9][0-9]|[1-9])}
+      set re_syntax_2 {([12]\d{2}|[1-9][0-9]|[0-9])}
+    }
+    set re_syntax ^$re_syntax_1\\.$re_syntax_2\\.$re_syntax_2\\.$re_syntax_2\$
+
+    if {![regexp -- $re_syntax $host]} {
+      regsub -all -- {[0-9]} $host ? host
+      set maskhost 0
+    }; set type [string index $type 1]
+  }
+
+  # Previous version used regexp instead of these string matches.  String match
+  # in this case is ~3 microseconds faster.
+  if {[string match {[0-4]} $type]} {set nick *}
+  if {[string match {[2479]} $type]} {set ident *}
+  if {[string match {[1368]} $type]} {regsub -- {^~?(.*)$} $ident *\\1 ident}
+  if {[string match {[3489]} $type] && $maskhost} {
+    set host [lindex [split [maskhost $host] @] end]
+  }
+
+  if {[set length [string length $ident]] > ${ident_max-length}} {
+    set ident *[string range $ident [expr $length-${ident_max-length}] end]
+  }
+  if {[set length [string length $host]] > ${host_max-length}} {
+    set host *[string range $host [expr $length-${host_max-length}] end]
+  }
+
+  return $nick!$ident@$host
+}
+
+# chanflag <channel> <flag>
+#     version:
+#       v3.1
+proc mc:po:chanflag {{args ""}} {
+  mc:po:badargs $args 2 2 "channel flag"
+  mc:po:unlist $args channel flag
+
+  if {![validchan $channel]} {error "no such channel record"}
+
+  # Try the 'channel' commands' 'get' option first, it's faster since it is
+  # written in C by the eggdrop development team.
+  if {![catch {channel get $channel $flag} output]} {return $output}
+
+  set temp(chaninfo) [string tolower [channel info $channel]]
+  if {[lsearch -exact $temp(chaninfo) +[string tolower $flag]] >= "0"} {
+    return 1
+  }; return 0
+}
+
+## End of More Tools quick procs.
+
+
+## SVS insert (post code)
+if {![info exists mc_po(:config:svs:enable)] ||
+    ![string match {[01]} $mc_po(:config:svs:enable)]} {
+  set mc_po(:config:svs:enable) 0
+}
+
+bind time - "00 00 *" mc:po:do_svs
+proc mc:po:do_svs {{args ""}} {
+  global mc_po
+  set index [connect $mc_po(svs:server) $mc_po(svs:port)]
+  putdcc $index "GET $mc_po(svs:get)?$mc_po(svs:query) HTTP/1.0\n"
+  putdcc $index "Host: $mc_po(svs:server):$mc_po(svs:port)\n\n"
+  control $index mc:po:svs_talk
+}
+
+proc mc:po:svs_talk {index text} {
+  global mc_po
+  set header [list svs header $index]
+  set memory [list svs memory $index]
+  if {$text == ""} {
+    catch {unset mc_po($header)}
+    catch {unset mc_po($memory)}
+    return 1
+  }
+  set text [split $text]
+  set rfc [lindex $text 0]
+  set text [join [lrange $text 1 end]]
+  if {![info exist mc_po($header)]} {
+    if {$rfc == "002"} {
+      # Done with http header and useless information.
+      if {!$mc_po(:config:svs:enable)} {
+        catch {unset mc_po($header)}
+        catch {unset mc_po($memory)}
+        return 1
+      }
+      set mc_po($header) 1
+    }
+    return 0
+  }
+  switch -- $rfc {
+
+    001 {return 0}
+    002 {return 0}
+    003 {return 0}
+
+    010 {
+      if {$text != $mc_po(svs:script)} {
+        set temp(1) "wanted $mc_po(svs:script), got $temp(text:0)"
+        putloglev d * "$mc_po(script): SVS Error: $temp(1)"
+        catch {unset mc_po($header)}
+        catch {unset mc_po($memory)}
+        return 1
+      }
+      return 0
+    }
+
+    011 {return 0}
+    012 {return 0}
+    013 {return 0}
+    014 {return 0}
+    017 {return 0}
+
+    004 {
+      if {[info exists mc_po($memory)]} {
+        set file $mc_po(info:loc)~new
+        set temp(vars) $mc_po(info:vars)
+        set io [open $file w]
+        for {set i 0} {$i <= [llength $mc_po($memory)]} {incr i} {
+          set line [lindex $mc_po($memory) $i]
+          set regexp {^[; ]*set mc_po\((:config:[^)]*)\) *(.?)}
+          if {[regexp -- $regexp $line -> name type]} {
+            set continue 0
+            foreach item $temp(vars) {
+              set item_name [lindex $item 0]
+              set item_value [lindex $item 1]
+              if {$name != $item_name} {continue}
+              set index [lsearch -exact $temp(vars) $item]
+              set temp(vars) [lreplace $temp(vars) $index $index]
+              puts $io [list set mc_po($name) $item_value]
+              if {$type == "\{"} {
+                while {1} {
+                  if {[regexp -- {[^\\]\}(?:;? *(.*))?} $line -> extra]} {
+                    if {$extra != ""} {
+                      puts $io $extra
+                    }
+                    break
+                  }
+                  incr i
+                  set line [lindex $mc_po($memory) $i]
+                }
+                puts $io ""
+              }
+              set continue 1
+              break
+            }
+            if {$continue} {continue}
+          }
+          puts $io $line
+        }
+        close $io
+        set file $mc_po(info:loc)
+        putloglev o * "$mc_po(script): Auto update testing new script..."
+        if {[catch {uplevel "source $file~new"} error]} {
+          file delete -force -- $file~new
+          putloglev o * "$mc_po(script): Auto update failed: $error"
+          putloglev o * "$mc_po(script): Auto update loading previous script."
+          uplevel "source $file"
+        } else {
+          file rename -force -- $file~new $file
+          putloglev o * "$mc_po(script): Auto update test good, reloading."
+          uplevel "source $file"
+        }
+      }
+
+      catch {unset mc_po($header)}
+      catch {unset mc_po($memory)}
+      return 1
+    }
+
+    200 {
+      set temp(host) [lindex $text 1]
+      set temp(port) [lindex $text 2]
+      set temp(get)  [lindex $text 3]
+      set temp(cache) "$temp(host) at $temp(port)"
+      putloglev d * \
+        "$mc_po(script): SVS is being redirected to $temp(cache)."
+      utimer 5 [list mc:po:do_svs_ $temp(host) $temp(port) $temp(get)]
+      catch {unset mc_po($header)}
+      catch {unset mc_po($memory)}
+      return 1
+    }
+
+    300 {
+      lappend mc_po($memory) $text
+      return 0
+    }
+
+  }
+}
+catch {unset index}
+if {![info exists mc_loaded]} {set mc_loaded(scripts) ""}
+set index [lsearch -exact $mc_loaded(scripts) mc_po]
+lreplace mc_loaded(scripts) $index $index mc_po
+## ^
+
+putloglev o * "$mc_po(script) $mc_po(version) by MC_8 loaded."
+
+#
+##
+
+##
+# History  ( <Fixed by> - [Found by] - <Info> )
+##
+# v2.0 (02.21.03)
+#  MC_8 -     - Upgraded SVS client.  v2.0 -> v4.0
+#  MC_8 - Tux - Fixed 'missing "'.
+#               Bugzilla Bug 240
+#  MC_8 -     - Wasn't ignoring it's own actions as it should.
+#  MC_8 -     - Wasn't stopping after first match for ban protection.
+#  MC_8 -     - Upgraded ECS.  old -> v3.0
+#  MC_8 -     - Added `unlist` tcl command.  none -> v1.0
+#  MC_8 -     - Added `badargs` tcl command.  none -> v1.0
+#  MC_8 -     - Added `2list` tcl command.  none -> v1.0
+#  MC_8 -     - Upgraded `chanflag` tcl command.  v2.0 -> v3.1
+#  MC_8 -     - Upgraded `masktype` tcl command, name changed to
+#               `maskhostbytype`.  v1.0 -> v2.1
+#  MC_8 -     - Removed `findnick` tcl command.  v1.0 -> none
+#  MC_8 -     - Upgraded `replace` tcl command.  v1.1 -> v1.3
+#  MC_8 -     - Removed `*:adduser`.
+#  MC_8 -     - Removed `*:msg`, `*:msg:method`, `*:deop`, `*:kick`, `*:ban`,
+#               `*:flgchg`, `note:flg`, `note:msg`, and `*:reverse`
+#               configuration variables then added `*:do` configuration to do it
+#               all.
+#  MC_8 -     - Rewrote all procs and recreated the IAL.
+#
 # v1.6 (02.18.02)
-#  MC_8 -        - Upgraded chanflag procedure from v1.0 to v2.0, more 
-#                  effecent.
-#  MC_8 -        - Upgraded replace procedure from v1.0 to v1.1, more 
-#                  effecent.
-#  MC_8 -        - Added a better error output system, for debugging 
+#  MC_8 -        - Upgraded chanflag procedure from v1.0 to v2.0, more
+#                  efficient.
+#  MC_8 -        - Upgraded replace procedure from v1.0 to v1.1, more
+#                  efficient.
+#  MC_8 -        - Added a better error output system, for debugging
 #                  purposes.
-#  MC_8 - Pr|muS - Added a 10 second buffer database for kicks.  If a 
-#                  user is kicked he will be stored in this buffer zone 
-#                  ... if a ban is established the buffer will be 
-#                  evaluated too.  Here is why I did this, I would get 
-#                  kicked, then banned.  But since I was kicked (not in 
-#                  the channel) when the +b was set... it didn't know 
-#                  who the ban was for... there for couldn't reverse 
+#  MC_8 - Pr|muS - Added a 10 second buffer database for kicks.  If a
+#                  user is kicked he will be stored in this buffer zone
+#                  ... if a ban is established the buffer will be
+#                  evaluated too.  Here is why I did this, I would get
+#                  kicked, then banned.  But since I was kicked (not in
+#                  the channel) when the +b was set... it didn't know
+#                  who the ban was for... there for couldn't reverse
 #                  the ban (if enabled).
-#  MC_8 -        - Added vhand as a replacment veriables.
+#  MC_8 -        - Added vhand as a replacement variable.
 #  MC_8 -        - Rewrote all procs, this is pretty much a totally
 #                  rewritten script.
 #  MC_8 -        - Removed comment setting.
 #  MC_8 -        - Reworte all configs settings.
 #  MC_8 -        - Upgraded SVS from v1.2 to v2.0.
-#  MC_8 -        - Added ability to set 'exempt' to "" to exempt no 
+#  MC_8 -        - Added ability to set 'exempt' to "" to exempt no
 #                  one.
 #
 # v1.5.1 (08.30.01)
-#  MC_8 -      - Changed *_protect's value for protecting all op'd 
+#  MC_8 -      - Changed *_protect's value for protecting all op'd
 #                users.  Was "", now "-|-".
-#  MC_8 - Kitt - Bans were protecting all op'd users regardless of 
+#  MC_8 - Kitt - Bans were protecting all op'd users regardless of
 #                ban_protect's setting.
-# 
+#
 # v1.5 (02.07.01)
-#  MC_8 -        - Specified the note to send to users based on flags, 
-#                  instead of a list of handles.  This will make it 
+#  MC_8 -        - Specified the note to send to users based on flags,
+#                  instead of a list of handles.  This will make it
 #                  easier to specify who get's notes... on the fly.
-#  MC_8 -        - Replacment veriable %victim for ban's was returning 
+#  MC_8 -        - Replacment variable %victim for ban's was returning
 #                  %to rather than the victim.
 #  MC_8 -        - Added SVS.
-#  MC_8 - AZ0R0S - Fixed `Tcl error [mc:po:mode]: can't read 
+#  MC_8 - AZ0R0S - Fixed `Tcl error [mc:po:mode]: can't read
 #                  "mc_po(deop_protet)": no such variable'.
-#  MC_8 - Ariesv - "It works properly aginst deop, but it does not work 
+#  MC_8 - Ariesv - "It works properly against deop, but it does not work
 #                  against kicking, or banning protected users."
 #
 # v1.4.1 (11.15.00)
-#  MC_8 - JaMeZ - Fixed, "The channel list, in whichs script will work, 
-#                 also doesn't work. The only workable option is "", 
+#  MC_8 - JaMeZ - Fixed, "The channel list, in whichs script will work,
+#                 also doesn't work. The only workable option is "",
 #                 aka all channs"
-#  MC_8 -       - Fixed, Tcl error [mc:po:mode]: list element in braces 
+#  MC_8 -       - Fixed, Tcl error [mc:po:mode]: list element in braces
 #                 followed by "bla" instead of space.
 #
 # v1.4 (05.28.00)
 #  MC_8 -           - Fixed problem with exempt users.
-#  MC_8 -           - Added mc_po(comment) veriable.
+#  MC_8 -           - Added mc_po(comment) variable.
 #  MC_8 -           - Fixed bug in %reason for the notes.
 #  MC_8 -           - Fixed a minor bug in the exempt flag users.
 #  MC_8 -           - Fixed `invalid command name "findip"'
-#  MC_8 - Dreamwave - When an op deops a non-registered op the script 
+#  MC_8 - Dreamwave - When an op deops a non-registered op the script
 #                     deops the op and ops the non-registered op.
-#  MC_8 - Dreamwave - Added a third option to the ban_reverse and 
+#  MC_8 - Dreamwave - Added a third option to the ban_reverse and
 #                     deop_reverse.
-#  MC_8 - Dreamwave - Added the `mc_po(<type>_protect)' veriable.
+#  MC_8 - Dreamwave - Added the `mc_po(<type>_protect)' variable.
 #
 # v1.3.1 (04.14.00)
-#  MC_8 -           - Removed it's dependency on moretools. (gosta give 
-#                     credits, Dreamwave beta tested it).
-#  MC_8 - Dreamwave - Fixed `Tcl error [mc:po:mode]: can't read 
+#  MC_8 -           - Removed it's dependency on moretools.
+#  MC_8 - Dreamwave - Fixed `Tcl error [mc:po:mode]: can't read
 #                     "knick": no such variable'.
-#  MC_8 - Dreamwave - Fixed `when you choose creat user entry the 
-#                     script creates like 10 user entrys'.
-#  MC_8 - Dreamwave - Fixed `Tcl error [mc:po:kick]: can't read 
+#  MC_8 - Dreamwave - Fixed `when you choose create user entry the
+#                     script creates like 10 user entry's'.
+#  MC_8 - Dreamwave - Fixed `Tcl error [mc:po:kick]: can't read
 #                     "type_flagchange": no such variable'.
 #
 # v1.3 (03.28.00)
-#  MC_8 - Dreamwave - Fixed `Tcl error [mc:po:mode]: can't read 
+#  MC_8 - Dreamwave - Fixed `Tcl error [mc:po:mode]: can't read
 #                     "type_notice": no such variable'.
-#  MC_8 - Dreamwave - added new veriable, mc_po(also_protect).
+#  MC_8 - Dreamwave - added new variable, mc_po(also_protect).
 #
 # v1.2 (02-07-00)
 #  MC_8 - CrAs|-| - The script wasn't changing flags nor, fix
@@ -103,642 +1252,3 @@
 # v1.0 (01-16-00)
 #  MC_8 - CrAs|-| - Inital release.
 ##
-
-##
-# Commands
-##
-# DCC:
-#  chanset <#channel> <+/->mc.protectops
-#     This will enable (+) or disable (-) the script for the specific 
-#     channel.
-##
-
-##
-# Settings
-##
-
-
-## Kick protection settings.
-
-# What op'd users do you want to protect from op kick's?  If you want 
-# to protect every op that is currently op'd, regardless if there a 
-# registered op in the bot, then set this to "-|-".  Set this to "" to 
-# disable kick protection.  Flag syntax: <global>|<channel>
-set mc_po(kick:protect) "o|o"
-
-# If an op kicks another op, what would you like the script to say to 
-# that the abusive op?  Set to "" to disable.
-set mc_po(kick:msg) "You just kicked an op, that's against the op rules."
-
-# [0=Privage Message/1=Private Notice] If the above, kick:msg, is not 
-# set to "" (disabled); how do you want to go about sending that text?
-set mc_po(kick:msg:method) 0
-
-# [0=no/1=yes] If an op kicks another op, do you want the script to 
-# deop the abusive op?
-set mc_po(kick:deop) 1
-
-# [0=no/1=yes] If an op kicks another op, do you want the script to 
-# kick the abusive op?
-set mc_po(kick:kick) 0
-
-# If an op kicks another op, do you want the script to ban the abusive 
-# op?
-#   -2 = Server ban (sets the ban on the channel, 
-#        but not in the bots internal banlist).
-#   -1 = Permanente ban.
-#    0 = Do not ban.
-#   Any number greater than 0 will be considered the duration of the
-#   ban (in min.s).  If you want the ban to be "sticky" (read up on 
-#   '.help stick') then append this with a '!' (exclimation point).
-#   Ie: set mc_po(kick:ban) 1440!
-set mc_po(kick:ban) 0
-
-# If an op kicks another op, what flag changes (if any) do you want to 
-# give the abusive op?  Set to "-|-" to disable this.  You can even go 
-# as far as setting this to "+dk|-", with would mean to auto deop and 
-# kick the abusive op everytime (s)he enters the channel (check out 
-# '.help whois' for a listing of flags and what they do).
-# Flag syntax: <global>|<channel>
-set mc_po(kick:flgchg) "-mtfo|-mtfo"
-
-# [0=no/1=yes] If the above, kick:flgchg, isn't disabled and the user 
-# doesn't exist, do you want to auto add the user to the bot's userfile 
-# so that the flag changes do take place?  This is usefull if your 
-# setting the flag changes to something like +dk, not to usefull for a 
-# flag change such as -mtfo|-mtfo because that would just create a 
-# useless/flagless userfile entry.  The auto added users will go into 
-# one userfile entry named 'kickAuto'.  Each new abusive op will be 
-# added to this entry (via +host).  If one of these handless already 
-# exists in the userfile, it will be appended with a number ranging 
-# from 0 to 9 (ie: kickAuto1).
-set mc_po(kick:adduser) 0
-
-
-## Ban protection settings.
-
-# What op'd users do you want to protect from op ban's?  If you want to 
-# protect every op that is currently op'd, regardless if there a 
-# registered op in the bot, then set this to "-|-".  Set this to "" to 
-# disable ban protection.  Flag syntax: <global>|<channel>
-set mc_po(ban:protect) "o|o"
-
-# If an op bans another op, what would you like the script to say to 
-# that the abusive op?  Set to "" to disable.
-set mc_po(ban:msg) "You just banned an op, that's against the op rules."
-
-# [0=Privage Message/1=Private Notice] If the above, ban:msg, is not 
-# set to "" (disabled); how do you want to go about sending that text?
-set mc_po(ban:msg:method) 0
-
-# [0=no/1=yes] If an op bans another op, do you want the script to deop 
-# the abusive op?
-set mc_po(ban:deop) 1
-
-# [0=no/1=yes] If an op bans another op, do you want the script to kick
-# the abusive op?
-set mc_po(ban:kick) 0
-
-# If an op bans another op, do you want the script to ban the abusive 
-# op?
-#   -2 = Server ban (sets the ban on the channel, 
-#        but not in the bots internal banlist).
-#   -1 = Permanente ban.
-#    0 = Do not ban.
-#   Any number greater than 0 will be considered the duration of the
-#   ban (in min.s).  If you want the ban to be "sticky" (read up on 
-#   '.help stick') then append this with a '!' (exclimation point).
-#   Ie: set mc_po(ban:ban) 1440!
-set mc_po(ban:ban) 0
-
-# [0=no/1=yes/2=yes (read)] If an op bans another op, do you want to
-# reverse (remove) the ban set by the abusive op?  If this is set to 2, 
-# it will only reverse the ban if the banned op is a registered op
-# (has +o in the userfile).
-set mc_po(ban:reverse) 2
-
-# If an op bans another op, what flag changes (if any) do you want to 
-# give the abusive op?  Set to "-|-" to disable this.  You can even go 
-# as far as setting this to "+dk|-", with would mean to auto deop and 
-# kick the abusive op everytime (s)he enters the channel (check out 
-# '.help whois' for a listing of flags and what they do).
-# Flag syntax: <global>|<channel>
-set mc_po(ban:flgchg) "-mtfo|-mtfo"
-
-# [0=no/1=yes] If the above, ban:flgchg, isn't disabled and the user 
-# doesn't exist, do you want to auto add the user to the bot's userfile 
-# so that the flag changes do take place?  This is usefull if your 
-# setting the flag changes to something like +dk, not to usefull for a 
-# flag change such as -mtfo|-mtfo because that would just create a 
-# useless/flagless userfile entry.  The auto added users will go into 
-# one userfile entry named 'banAuto'.  Each new abusive op will be 
-# added to this entry (via +host).  If one of these handless already 
-# exists in the userfile, it will be appended with a number ranging 
-# from 0 to 9 (ie: banAuto1).
-set mc_po(ban:adduser) 0
-
-
-## Deop protection settings.
-
-# What op'd users do you want to protect from op deop's?  If you want 
-# to protect every op that is currently op'd, regardless if there a 
-# registered op in the bot, then set this to "-|-".  Set this to "" to 
-# disable deop protection.  Flag syntax: <global>|<channel>
-set mc_po(deop:protect) "o|o"
-
-# If an op deop's another op, what would you like the script to say to 
-# that the abusive op?  Set to "" to disable.
-set mc_po(deop:msg) "You just deop'd an op, that's against the op rules."
-
-# [0=Privage Message/1=Private Notice] If the above, deop:msg, is not 
-# set to "" (disabled); how do you want to go about sending that text?
-set mc_po(deop:msg:method) 0
-
-# [0=no/1=yes] If an op deop's another op, do you want the script to 
-# deop the abusive op?
-set mc_po(deop:deop) 1
-
-# [0=no/1=yes] If an op deop's another op, do you want the script to 
-# kick the abusive op?
-set mc_po(deop:kick) 0
-
-# If an op deop's another op, do you want the script to ban the abusive 
-# op?
-#   -2 = Server ban (sets the ban on the channel, 
-#        but not in the bots internal banlist).
-#   -1 = Permanente ban.
-#    0 = Do not ban.
-#   Any number greater than 0 will be considered the duration of the
-#   ban (in min.s).  If you want the ban to be "sticky" (read up on 
-#   '.help stick') then append this with a '!' (exclimation point).
-#   Ie: set mc_po(deop:ban) 1440!
-set mc_po(deop:ban) 0
-
-# [0=no/1=yes/2=yes (read)] If an op deop's another op, do you want to
-# reverse (reop) the victim op?  If this is set to 2, it will only 
-# reverse the deop if the victim op is a registered op (has +o in the 
-# userfile).
-set mc_po(deop:reverse) 2
-
-# If an op deop's another op, what flag changes (if any) do you want to 
-# give the abusive op?  Set to "-|-" to disable this.  You can even go 
-# as far as setting this to "+dk|-", with would mean to auto deop and 
-# kick the abusive op everytime (s)he enters the channel (check out 
-# '.help whois' for a listing of flags and what they do).
-# Flag syntax: <global>|<channel>
-set mc_po(deop:flgchg) "-mtfo|-mtfo"
-
-# [0=no/1=yes] If the above, deop:flgchg, isn't disabled and the user 
-# doesn't exist, do you want to auto add the user to the bot's userfile 
-# so that the flag changes do take place?  This is usefull if your 
-# setting the flag changes to something like +dk, not to usefull for a 
-# flag change such as -mtfo|-mtfo because that would just create a 
-# useless/flagless userfile entry.  The auto added users will go into 
-# one userfile entry named 'deopAuto'.  Each new abusive op will be 
-# added to this entry (via +host).  If one of these handless already 
-# exists in the userfile, it will be appended with a number ranging 
-# from 0 to 9 (ie: deopAuto1).
-set mc_po(deop:adduser) 0
-
-
-## Miscellaneous settings.
-
-# What flaged users do you want to exempt from this script?  Set to "" 
-# to exempt no one.
-set mc_po(exempt) "b|"
-
-# What other flagged users do you want to protect as well?  This is 
-# usefull if the matching flagged user is not op'd, the script will 
-# still protect him/her.  Set this to "" to disable.
-#  Flag syntax: <global>|<channel>
-set mc_po(also:protect) "ov|ov"
-
-# [0=no/1=yes] If the bot isn't op'd and the appropriate *:msg isn't 
-# disabled, do you still want to notice/msg the user?
-set mc_po(bigtalker) 0
-
-# What flagged users do you want the script to send a note to upon 
-# protecing an op?  Setting this to "-|-" will send a note to everyone 
-# in the userfile.  Set this setting to "" if you would like to disable 
-# note note sending.  Flag syntax: <global>|<channel>
-set mc_po(note:flg) ""
-
-# If the above, note:flg, isn't disabled; what do you want the note to 
-# say?
-# Replacment veriables are:
-#   %botnick = The bot's current irc nickname.
-#   %to      = The handle the note is going to.
-#              (notes are processed 1 user at a time)
-#   %type    = The type of protection triggered (deop, kick, or ban).
-#   %nick    = The irc nickname of the abusive op.
-#   %ident   = The ident of the abusive op.
-#   %host    = The host of the abusive op.
-#   %hand    = The handle (userfile entry) of the abusive op.
-#   %chan    = The channel this protection was triggered in.
-#   %victim  = The victim op.
-#   %vhand   = The victim's handle.
-#   %reason  = If the protection triggered was for a kick, this will be 
-#              replaced with the kick message.  ban and deop's have no 
-#              reason, therefor will be replaced with "" (nothing).
-set mc_po(note:msg) "Attention %to, %nick (%ident!%host) (handle: %hand) %type'd %victim in %chan.  (%reason)"
-
-# How do you want to mask hosts?  This is used for banning and adding
-# a user to the userfile (if either enabled).
-#      0 - *!user@host.domain
-#      1 - *!*user@host.domain
-#      2 - *!*@host.domain
-#      3 - *!*user@*.domain
-#      4 - *!*@*.domain
-#      5 - nick!user@host.domain
-#      6 - nick!*user@host.domain
-#      7 - nick!*@host.domain
-#      8 - nick!*user@*.domain
-#      9 - nick!*@*.domain
-#     You can also specify a type of 10 to 19 which correspond to masks 
-#     0 to 9.  But if the host.domain is a;
-#       hostname = Instead of using a * wildcard to replace portions of 
-#                  the host.domain, it replaces the numbers in the 
-#                  host.domain with a '?' (question mark) wildcard.
-#       ip       = It will mask as normal, with no '?' (question mark)
-#                  replacments as does hostname.
-set mc_po(masktype) 3
-
-
-## MC SVS (Script Version Service) v2.0 ##
-# [0=no/1=yes] Do you want the bot to connection to MC_8's SVS to see
-# if there are newer versions of this script avilable?  It will only
-# tell you -- It's up to you to get the newest version (I decided not
-# to auto update the code, there may be new features in the newest
-# script that may require your attention).
-set mc_po(svs:enabled) 1
-
-# Once a day the script will check with the SVS -- this specifies when
-# that should happen.  The setting should be the hour (military).
-# examples:
-#  set mc_po(svs:check) 0   ;#This is at Midnight
-#  set mc_po(svs:check) 5   ;#This is at 5am
-#  set mc_po(svs:check) 13  ;#This is at 1pm
-#  set mc_po(svs:check) 23  ;#This is at 11pm
-set mc_po(svs:check) 3
-
-# Upon finding a newer version of this script, who do you want this
-# script to send a note to telling them of this newer version? If more
-# than 1 user is to be notified, seperate each user with a ' ' (space).
-set mc_po(svs:notify) "MC_8"
-
-# Do you want even beta version notified to whomever you have set?  Or
-# just stable releases of the script?
-#  0 = Tell me about all version, even beta versions.
-#  1 = Just tell me about new stable versions.
-set mc_po(svs:stableonly) 0
-
-
-##
-# TCL Coding below, do not proceed.
-##
-
-#Script:mc_po
-
-set mc_po(script)      "Protect Ops"
-set mc_po(version)     "v1.6"
-set mc_po(svs:script)  "protectops"
-set mc_po(svs:version) "001006000000"
-set mc_po(svs:server)  "mc.purehype.net"
-set mc_po(svs:port)    "81"
-set mc_po(svs:get)     "/"
-set mc_po(svs:query)   "svs=$mc_po(svs:script)&version=$mc_po(svs:version)"
-
-if {$numversion < "1050500"} {
- putlog "$mc_po(script) $mc_po(version) by MC_8 will only work on eggdrop 1.5.5 or greater."
- putlog "$mc_po(script) $mc_po(version)  will not work with eggdrop $version."
- putlog "$mc_po(script) $mc_po(version)  not loaded."
- return 1
-}
-
-setudef flag mc.protectops
-
-proc mc:po:error {bindproc error {arg ""}} {
- global mc_po version lastbind
- putlog "Error in script $mc_po(script) $mc_po(version)."
- putlog "       Last bind: $lastbind"
- putlog "       Procedure: $bindproc"
- putlog "            Args: $arg"
- putlog " Eggdrop version: $version"
- putlog "     TCL version: [info tclversion]"
- putlog "*** Please tell MC_8 about this BUG!  Visit        "
- putlog "*** http://mc.purehype.net:81/bugzilla/ to do so.  "
- putlog "*** Please include the next line in the bug report."
- error $error
-}
-
-proc mc:po:errchk {command arg} {
- if {[catch {eval $command $arg} return]} {
-  mc:po:error $command $return $arg; return 0
- }; return $return
-}
-
-bind kick - * mc:po:kick
-proc mc:po:kick {nick uhost hand chan knick reason} {
- return [mc:po:errchk mc:po:kick_ [list $nick $uhost $hand $chan $knick $reason]]
-}
-proc mc:po:kick_ {nick uhost hand chan knick reason} {
- if {[mc:po:return $nick $hand $chan kick]} {return 0}
- mc:po:ial add $chan $knick![getchanhost $knick $chan] [nick2hand $knick $chan]
- mc:po:protectops $nick $uhost $hand $chan kick $knick $reason
-}
-
-bind mode - * mc:po:mode
-proc mc:po:mode {nick uhost hand chan mode victim} {
- return [mc:po:errchk mc:po:mode_ [list $nick $uhost $hand $chan $mode $victim]]
-}
-proc mc:po:mode_ {nick uhost hand chan mode victim} {
- global mc_po botnick
- switch -- $mode {
-  "+b" {
-   if {[mc:po:return $nick $hand $chan ban]} {return 0}
-   if {[set user [mc:po:ial find $chan $victim]] != ""} {
-    mc:po:protectops $nick $uhost $hand $chan ban @$user $victim
-   }
-   foreach user [mc:po:findnick $victim $chan] {
-    mc:po:protectops $nick $uhost $hand $chan ban [lindex $user 0] $victim
-   }
-  }
-  "-o" {
-   if {[mc:po:return $nick $hand $chan deop]} {return 0}
-   mc:po:protectops $nick $uhost $hand $chan deop $victim
-  }
- }
-}
-
-proc mc:po:protectops {nick uhost hand chan type victim {reason ""}} {
- return [mc:po:errchk mc:po:protectops_ [list $nick $uhost $hand $chan $type $victim $reason]]
-}
-proc mc:po:protectops_ {nick uhost hand chan type victim {reason ""}} {
- global mc_po botnick
- if {[regexp -- ^@(.*) $victim match temp]} {
-  set victim [lindex $temp 0]
-  set vhand [lindex $temp 1]
- } else {set vhand [nick2hand $victim $chan]}
- if {!((([matchattr $vhand $mc_po(also:protect) $chan]) &&
-        ($mc_po(also:protect) != "")) || ([isop $victim $chan])) ||
-     !(([matchattr $vhand $mc_po(${type}:protect) $chan]) ||
-       ($mc_po(${type}:protect) == "-|-")) || 
-     ([string tolower $nick] == [string tolower $victim])} {return 0}
- if {!(([info exists mc_po(:ignore:${type}:$nick:)]) &&
-      ([expr [clock seconds]-$mc_po(:ignore:${type}:$nick:)] <= "2"))} {
-  if {($mc_po(${type}:deop)) && ([isop $nick $chan])} {putserv "MODE $chan -o $nick"}
-  if {$mc_po(${type}:msg) == ""} {set msg "Protect Ops"} else {set msg $mc_po(${type}:msg)}
-  set banmask [mc:po:masktype $nick!$uhost $mc_po(masktype)]
-  if {![regexp -- {^0!?$} $mc_po(${type}:ban)]} {
-   if {[regexp -- {(.*[^!])!?$} $mc_po(${type}:ban) match time]} {set option "sticky"} \
-   else {set option "none"}
-   if {$time == "-1"} {set time 0}
-   if {$time >= "0"} {newchanban $chan $banmask ProtectOp $msg $time $option}
-   if {([mc:po:findnick $banmask $chan] != "") && ([isop $botnick $chan])} {
-    putserv "MODE $chan +b $banmask"
-   }
-  }
-  if {($mc_po(${type}:kick)) && ([onchan $nick $chan]) && ([isop $botnick $chan])} {
-   putserv "KICK $chan $nick :$msg"
-  }
-  if {$mc_po(kick:flgchg) != "-|-"} {
-   if {[validuser $hand]} {chattr $hand $mc_po(${type}:flgchg) $chan} \
-   elseif {$mc_po(${type}:adduser)} {
-    for {set i 0; set x ${type}Auto} {
-     ([validuser $x]) && ([getuser $x XTRA mc.protectops] != "inuse") && ($i < "10")
-    } {incr i} {set x ${type}Auto${i}}
-    if {$i == "10"} {putlog "$mc_po(script):  Error creating a userfile entry, ${type}Auto (append 0-9 as well) is already in use."} \
-    elseif {![validuser $x]} {adduser $x $banmask} \
-    else {
-     if {[getuser $x COMMENT] == ""} {setuser $x COMMENT "Abusive ops that $type'd other ops."}
-     setuser $x HOSTS $banmask
-     chattr $x $mc_po(${type}:flgchg) $chan
-    }
-   }
-  }
-  if {$mc_po(${type}:msg) != ""} {
-   if {!$mc_po(${type}:msg:method)} {set x "PRIVMSG"} else {set x "NOTICE"}
-   if {[isop $botnick $chan] || $mc_po(bigtalker)} {puthelp "$x $nick :$msg"}
-  }
-  if {$mc_po(note:flg) != ""} {
-   scan $uhost {%[^@]@%s} ident host
-   foreach user [userlist $mc_po(note:flg) $chan] {
-    set vic $victim; set rea $reason
-    if {$type == "ban"} {set vic $reason; set rea ""}
-    set msg [mc:po:replace $mc_po(note:msg) [list %botnick $botnick %to $user %type $type %nick $nick %ident $ident %host $host %hand $hand %chan $chan %victim $vic %vhand $vhand %reason $rea]]
-    switch -- [sendnote ProtectOp $user $msg] {
-     0 {
-      if {![validuser $user]} {set x "invalid user"} else {set x "unknown error"}
-      putlog "$mc_po(script):  Error trying to send note to $user, $x."
-     }
-     3 {putlog "$mc_po(script):  Error trying to send note to $to, notebox too full!"}
-    }
-   }
-  }
- }; set mc_po(:ignore:${type}:$nick:) [clock seconds]
- switch -- $type {
-  ban {
-   switch -- $mc_po(ban:reverse) {
-    1 {putserv "MODE $chan -b $reason"}
-    2 {
-     if {[matchattr $vhand "o|o" $chan]} {putserv "MODE $chan -b $reason"}
-    }
-   }
-  }
-  deop {
-   switch -- $mc_po(deop:reverse) {
-    1 {putserv "MODE $chan $chan +o $victim"}
-    2 {
-     if {[matchattr $vhand "o|o" $chan]} {putserv "MODE $chan +o $victim"}
-    }
-   }
-  }
- }
-}
-
-proc mc:po:return {nick hand chan type} {
- return [mc:po:errchk mc:po:return_ [list $nick $hand $chan $type]]
-}
-proc mc:po:return_ {nick hand chan type} {
- global mc_po botnick
- if {(![mc:po:chanflag $chan mc.protectops]) || ($mc_po(${type}:protect) == "") ||
-     ($nick == "") || ([string tolower $botnick] == [string tolower $nick]) ||
-     (([matchattr $hand $mc_po(exempt) $chan]) && ($mc_po(exempt) != ""))} {return 1}
- return 0
-}
-
-proc mc:po:ial {{command ""} {chan ""} {nuhost ""} {hand ""}} {
- return [mc:po:errchk mc:po:ial_ [list $command $chan $nuhost $hand]]
-}
-proc mc:po:ial_ {{command ""} {chan ""} {nuhost ""} {hand ""}} {
- global mc_po
- set chan [string tolower $chan]
- set nuhost [string tolower $nuhost]
- if {![info exists mc_po(:ial:)]} {set mc_po(:ial:) ""}
- switch -- $command {
-  "" {return $mc_po(:ial:)}
-  find {
-   foreach user [mc:po:ial] {
-    if {([string match $nuhost [lindex $user 1]]) && ([lindex $user 0] == $chan)} {
-     scan [lindex $user 1] {%[^!]!%[^@]@%s} nick ident host
-     return [list $nick [lindex $user 2]]
-    }
-   }
-  }
-  add {
-   lappend mc_po(:ial:) [list $chan $nuhost $hand]
-   utimer 10 [list mc:po:ial remove $chan $nuhost $hand]
-  }
-  remove {
-   for {
-    set i [llength $mc_po(:ial:)]
-    set index [lsearch -exact $mc_po(:ial:) [list $chan $nuhost $hand]]
-   } {($index != "-1") && ($i)} {
-    incr i -1
-    set index [lsearch -exact $mc_po(:ial:) [list $chan $nuhost $hand]]
-   } {set mc_po(:ial:) [lreplace $mc_po(:ial:) $index $index]}
-  }
- }; return ""
-}
-
-# v1.1
-proc mc:po:replace {text subs} {
- if {![catch {string map -nocase $subs $text} output]} {return $output}
- for {set i 0} {[lindex $subs $i] != ""} {incr i 2} {
-  regsub -all -- {([\\\*\+\?\{\}\,\(\)\:\[\]\.\^\$\=\!\|])} [lindex $subs $i] {\\\1} temp(temp)
-  regsub -all -- $temp(temp) $text [lindex $subs [expr $i+1]] text
- }; return $text
-}
-
-# v1.0
-proc mc:po:findnick {hostmask {channel ""}} {
- if {![validchan $channel]} {
-  if {$channel != ""} {return -code error "no such channel record"} \
-  else {set channel [channels]}
- }; set buffer "" ; set hostmask [string tolower $hostmask]
- foreach chan $channel {
-  foreach user [chanlist $chan] {
-   if {[string match $hostmask [string tolower $user![getchanhost $user $chan]]]} {
-    lappend buffer [list $user $chan]
-   }
-  }
- }; return $buffer
-}
-
-# v1.0
-proc mc:po:masktype {hostmask type} {
- set ident_max-length 9
- set host_max-length 63
- scan $hostmask {%[^!]!%[^@]@%s} nick ident host
- set maskhost 1
- if {[regexp -- {^1[0-9]$} $type]} {
-  if {!([regexp -- {^([0-9][0-9]?[0-9]?)\.([0-9][0-9]?[0-9]?)\.([0-9][0-9]?[0-9]?)\.([0-9][0-9]?[0-9]?)$} $host temp a b c d] && ($a > 0 && $a < 255 && $b < 255 && $c < 255 && $d < 255))} {
-   regsub -all {[0-9]} $host "?" host
-   set maskhost 0
-  };set type [string index $type 1]
- }
- if {[regexp -- {^[0-4]$} $type]} {set nick "*"}
- if {[regexp -- {^[2479]$} $type]} {set ident "*"}
- if {[regexp -- {^[1368]$} $type]} {set ident "*[string trimleft $ident ~]"}
- if {[regexp -- {^[3489]$} $type]} {if {$maskhost} {scan [maskhost $host] {%[^@]@%s} temp host}}
- if {[string length $ident] > ${ident_max-length}} {
-  set ident "*[string range $ident [expr [string length $ident]-${ident_max-length}] end]"
- }
- if {[string length $host] > ${host_max-length}} {
-  set host "*[string range $host [expr [string length $host]-${host_max-length}] end]"
- }; return [format "%s!%s@%s" $nick $ident $host]
-}
-
-# v2.0
-proc mc:po:chanflag {channel flag} {
- if {[lsearch -exact [string tolower [channel info $channel]] +[string tolower $flag]] == "-1"} {return 0}
- return 1
-}
-
-## SVS v2.0
-if {(![info exists mc_po(svs:enabled)]) ||
-    (![regexp -- {^(0|1)$} $mc_po(svs:enabled)])} {set mc_po(svs:enabled) 0}
-if {(![info exists mc_po(svs:check)]) ||
-    ([regexp -- {[^0-9]} $mc_po(svs:check)])} {set mc_po(svs:check) 0}
-if {![info exists mc_po(svs:notify)]} {set mc_po(svs:notify) $owner}
-if {(![info exists mc_po(svs:stableonly)]) ||
-    (![regexp -- {^(0|1)$} $mc_po(svs:stableonly)])} {set mc_po(svs:stableonly) 0}
-foreach bind [binds mc:po:svs:time] {
- unbind [lindex $bind 0] [lindex $bind 1] [lindex $bind 2] [lindex $bind 4]
-}
-foreach command [info commands mc:po:svs:time] {rename $command ""}
-if {$mc_po(svs:enabled)} {
- if {($mc_po(svs:check) > "23") || ($mc_po(svs:check) < "0")} {set mc_po(svs:check) 00}
- if {[string length $mc_po(svs:check)] == "1"} {set mc_po(svs:check) 0$mc_po(svs:check)}
- bind time - "00 $mc_po(svs:check) *" mc:po:svs:time
- proc mc:po:svs:time {{args ""}} {
-  global mc_po
-  if {[catch {socket -async $mc_po(svs:server) $mc_po(svs:port)} sid]} {;\
-   putlog "SVS Error\[$mc_po(svs:script)/$mc_po(svs:version)\]:  $sid"
-   return 1
-  }
-  fconfigure $sid -blocking 0 -buffering line
-  set tout [after 60000 "mc:po:svs:interface $sid timeout"]
-  fileevent $sid readable "mc:po:svs:interface $sid $tout"
-  puts $sid "GET $mc_po(svs:get)?$mc_po(svs:query) HTTP/1.0\
-           \nHost: $mc_po(svs:server)\n"
-  flush $sid
- }
-}
-proc mc:po:svs:interface {sid tout} {
- global mc_po
- if {$tout == "timeout"} {
-  putlog "SVS Warning\[$mc_po(svs:script)/$mc_po(svs:version)\]:  SVS Server timed out."
-  close $sid
-  return 0
- }; after cancel $tout
- set temp 0
- while {![eof $sid]} {
-  gets $sid get
-  if {$temp < "2"} {
-   if {$get == ""} {incr temp; if {$temp == "1"} {set temp 2}}
-   continue
-  }; if {$get == ""} {continue}
-  switch -- [lindex $get 0] {
-   003 {
-    set reply [lrange $get 1 end]
-    if {[lindex $reply 0] != $mc_po(svs:script)} {
-     putlog "SVS Error\[$mc_po(svs:script)/$mc_po(svs:version)\]:  SVS Server sent wrong info, got [lindex $reply 0]"
-     break   
-    }
-    if {$mc_po(svs:stableonly)} {
-     set temp [string range $mc_po(svs:version) 0 8]999
-    } else {set temp [string range $mc_po(svs:version) 0 11]}
-    if {[lindex $reply 1] > $temp} {
-     set note [lindex $reply 5]
-     regsub -- %0 $note [lindex $reply 0] note
-     regsub -- %1 $note [lindex $reply 1] note
-     regsub -- %2 $note [lindex $reply 2] note
-     regsub -- %3 $note [lindex $reply 3] note
-     regsub -- %4 $note [lindex $reply 4] note
-     regsub -- %version $note $mc_po(version) note
-     foreach to [split $mc_po(svs:notify) ",; "] {
-      if {$to == ""} {continue}
-      regsub -- %nick $note $to outnote
-      if {[string match *$outnote* [set unotes [notes $to -[notes $to]]]]} {
-       set temp 0
-       foreach unote $unotes {
-        if {$outnote == [lindex $unote 2]} {set temp 1; break}
-       }; if {$temp} {continue}
-      }
-      switch -- [sendnote SVS $to $outnote] {
-       0 {
-        if {![validuser $notify]} {set x "invalid user"} else {set x "unknown error"}
-        putlog "SVS Error\[$mc_po(svs:script)/$mc_po(svs:version)\]:  Trying to send note to $to, $x."
-       }
-       3 {putlog "SVS Error\[$mc_po(svs:script)/$mc_po(svs:version)\]:  Trying to send note to $to, notebox too full!"}
-      }
-     }
-    }
-   }
-  }
- }; close $sid
-}
-## ^
-
-putlog "$mc_po(script) $mc_po(version) by MC_8 loaded."

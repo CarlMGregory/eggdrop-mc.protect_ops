@@ -1,5 +1,5 @@
 ##
-# Protect Ops v1.5 by MC_8 - Carl M. Gregory <gregory@worldinter.net>
+# Protect Ops v1.5.1 by MC_8 - Carl M. Gregory <gregory@worldinter.net>
 #  For eggdrop 1.5.0 and above only.
 #
 # My SVS Website - http://mc.purehype.net/
@@ -15,12 +15,17 @@
 ##
 # HISTORY  ( <Fixed by> - <Found by> - <Info> )
 ##
+# v1.5.1 (08.30.01)
+#  MC_8 - Changed *_protect's value for protecting all op'd users.  Was "", now "-|-".
+#  MC_8 - Kitt - Bans were protecting all op'd users regardless of ban_protect's setting.
+# 
 # v1.5 (02.07.01)
 #  MC_8 - Specified the note to send to users based on flags, insted of a list of handles.
 #         This will make it easier to specify who get's notes... on the fly.
 #  MC_8 - Replacment veriable %victim for ban's was returning %to rather than the victim.
 #  MC_8 - Added SVS
-#  MC_8 - AZ0R0S - Fixed `Tcl error [mc:po:mode]: can't read "mc_po(deop_protet)": no such variable'
+#  MC_8 - AZ0R0S - Fixed `Tcl error [mc:po:mode]: can't read "mc_po(deop_protet)": no such
+#                  variable'
 #  MC_8 - Aries - "It works properly aginst deop, but it does not work against
 #                 kicking, or banning protected users."
 #
@@ -31,19 +36,19 @@
 #         "bla" instead of space
 #
 # v1.4 (05.28.00)
-#       - Fixed problem with exempt users.
-#       - Added mc_po(comment) veriable.
-#       - Fixed bug in %reason for the notes.
-#       - Fixed a minor bug in the exempt flag users.
-#       - fixed `invalid command name "findip"'
+#  MC_8 - Fixed problem with exempt users.
+#  MC_8 - Added mc_po(comment) veriable.
+#  MC_8 - Fixed bug in %reason for the notes.
+#  MC_8 - Fixed a minor bug in the exempt flag users.
+#  MC_8 - fixed `invalid command name "findip"'
 #  MC_8 - Dreamwave - When an op deops a non-registered op the script deops the
 #                     op and ops the non-registered op.
 #                   - Added a third option to the ban_reverse and deop_reverse.
 #                   - Added the `mc_po(<type>_protect)' veriable.
 #
 # v1.3.1 (04.14.00)
-#  MC_8 - MC_8 - Removed it's dependency on moretools. (gosta give credits, Dreamwave beta
-#                tested it)
+#  MC_8 - Removed it's dependency on moretools. (gosta give credits, Dreamwave beta
+#         tested it)
 #  MC_8 - Dreamwave - Fixed `Tcl error [mc:po:mode]: can't read "knick": no such variable'.
 #                   - Fixed `when you choose creat user entry the script creates like 10
 #                     user entrys'.
@@ -129,10 +134,10 @@ set mc_po(note_msg) "Attention %to, %nick (handle: %hand) %type'd %victim in %ch
 # kick_notice to ""
 set mc_po(kick_reaction) 6
 
-# Who do you really want to protect?  You can specify there flags below.  If you want
-# to protect everyone that is op'd, set this to "".  If you only want to protect
-# the masters (global|channel) then set it to "m|m".  You can set to what ever you like,
-# but remember, it's "<global_flag>|<channel_flag>"
+# What op'd users do you want to protect?  Specify in flag format.  If you want
+# to protect everyone that is op'd, set this to "-|-".  If you only want to protect
+# the masters (global and channel) then set it to "m|m".  You can set to what ever
+# you like, but remember, it's in "<global_flag>|<channel_flag>" format.
 set mc_po(kick_protect) "o|o"
 
 #mc_po(kick_notice) defines the message to be noticed to the user and/or the message
@@ -159,10 +164,10 @@ set mc_po(kick_flagchange) "-mto|-mto"
 # set ban_notice to ""
 set mc_po(ban_reaction) 6
 
-# Who do you really want to protect?  You can specify there flags below.  If you want
-# to protect everyone that is op'd, set this to "".  If you only want to protect
-# the masters (global|channel) then set it to "m|m".  You can set to what ever you like,
-# but remember, it's "<global_flag>|<channel_flag>"
+# What op'd users do you want to protect?  Specify in flag format.  If you want
+# to protect everyone that is op'd, set this to "-|-".  If you only want to protect
+# the masters (global and channel) then set it to "m|m".  You can set to what ever
+# you like, but remember, it's in "<global_flag>|<channel_flag>" format.
 set mc_po(ban_protect) "o|o"
 
 #mc_po(ban_notice) defines the message to be noticed to the user and/or the message to be
@@ -195,10 +200,10 @@ set mc_po(ban_flagchange) "-mto|-mto"
 # set deop_notice to ""
 set mc_po(deop_reaction) 6
 
-# Who do you really want to protect?  You can specify there flags below.  If you want
-# to protect everyone that is op'd, set this to "".  If you only want to protect
-# the masters (global|channel) then set it to "m|m".  You can set to what ever you like,
-# but remember, it's "<global_flag>|<channel_flag>"
+# What op'd users do you want to protect?  Specify in flag format.  If you want
+# to protect everyone that is op'd, set this to "-|-".  If you only want to protect
+# the masters (global and channel) then set it to "m|m".  You can set to what ever
+# you like, but remember, it's in "<global_flag>|<channel_flag>" format.
 set mc_po(deop_protect) "o|o"
 
 #mc_po(deop_notice) defines the message to be noticed to the user and/or the message
@@ -218,10 +223,11 @@ set mc_po(deop_reverse) 1
 # "-|-o" instead.
 set mc_po(deop_flagchange) "-mto|-mto"
 
-# Ok, let's say there not op'd, what flag'd users would you like to protect also?
-# Please specify the | character, for those that don't know what it is, it's
-# <global>|<channel> flag system.  If you just put in "o" .. it's going to think 
-# that's global, so do "-|o" instead.
+# Ok, let's say there is a user that isn't op'd, but you still want to protect them.
+# This setting will allow you to protect them.  Specify in flag format.  If you only
+# want to protect the masters (global and channel) then set it to "m|m".  You can 
+# set to what ever you like, but remember, it's in "<global_flag>|<channel_flag>" 
+# format.
 set mc_po(also_protect) "ov|ov"
 
 # On any reaction that requires flag changes, the script will write a 
@@ -262,8 +268,8 @@ set mc_po(svs:stableonly) 0
 
 
 ###### Do not edit past this point (unless you know TCL) ######
-set mc_po(version) 1.5
-set mc_po(svs:script) "protectops 001005000000"
+set mc_po(version) 1.5.1
+set mc_po(svs:script) "protectops 001005001000"
 set mc_po(svs:server) "mc.purehype.net 8085"
 
 if {$numversion < "1050000"} {
@@ -280,9 +286,7 @@ proc mc:po:kick {nick uhost hand chan knick reason} {
      (![isop $knick $chan]) || (![matchattr [nick2hand $knick] $mc_po(also_protect)]) ||
      ($nick == $botnick) || ($nick == $knick) ||
      ([matchattr $hand $mc_po(exempt) $chan])} {return 0}
- if {((($mc_po(kick_protect) != "") && 
-     ([matchattr [nick2hand $knick] $mc_po(kick_protect) $chan])) || 
-     ($mc_po(kick_protect) == ""))} {
+ if {[matchattr [nick2hand $knick] $mc_po(kick_protect) $chan]} {
   mc:po:reaction $nick $uhost $hand $chan kick "$knick (handle: [nick2hand $knick])"
   foreach user [userlist $mc_po(note) $chan] {
    set msg [mc:pom:replace $mc_po(note_msg) "%botnick $botnick %to $user %type kick %nick $nick %uhost $uhost %hand $hand %chan $chan %victim {$knick (handle: [nick2hand $knick])} %reason {$reason}"]
@@ -299,10 +303,8 @@ proc mc:po:mode {nick uhost hand chan mode victim} {
  if {$mode == "+b"} {
   foreach user [split [mc:pom:findchanuser $victim $chan]] {
    if {$nick == $user} {continue}
-   if {([isop $user $chan]) || ([matchattr [nick2hand $user] $mc_po(also_protect) $chan]) ||
-       ((($mc_po(ban_protect) != "") && 
-       ([matchattr [nick2hand $user] $mc_po(ban_protect) $chan])) || 
-       ($mc_po(ban_protect) == ""))} {
+   if {(([isop $user $chan]) && ([matchattr [nick2hand $user] $mc_po(ban_protect) $chan])) ||
+        ([matchattr [nick2hand $user] $mc_po(also_protect) $chan])} {
     mc:po:reaction $nick $uhost $hand $chan ban "$victim (irc-nick: $user  handle: [nick2hand $user])"
     switch -- $mc_po(ban_reverse) {
      1 {if {[matchattr $user +o $chan]} {pushmode $chan -b $victim}}
@@ -318,9 +320,7 @@ proc mc:po:mode {nick uhost hand chan mode victim} {
  if {$mode == "-o"} {
   if {$nick == $victim} {return 0}
   if {([matchattr [nick2hand $victim] $mc_po(also_protect) $chan]) ||
-      ((($mc_po(deop_protect) != "") &&
-      ([matchattr [nick2hand $victim] $mc_po(deop_protect) $chan])) ||
-      ($mc_po(deop_protect) == ""))} {
+      ([matchattr [nick2hand $victim] $mc_po(deop_protect) $chan])} {
    mc:po:reaction $nick $uhost $hand $chan deop "$victim (handle: [nick2hand $victim])"
    switch -- $mc_po(deop_reverse) {
     1 {if {[matchattr $victim +o $chan]} {pushmode $chan +o $victim}}

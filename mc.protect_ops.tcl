@@ -1,5 +1,5 @@
 ##
-# Protect Ops v2.0.3
+# Protect Ops v2.0.4
 #  by MC_8 - Carl M. Gregory <mc8@purehype.net>
 #  This script will only run on eggdrop 1.6.13 or greater.
 #
@@ -42,7 +42,7 @@
 # syntax, <global>|<channel>
 set mc_po(:config:kick:protect) "o|o"
 
-# What do you want to do upon other op kicking an op?  Seperate each command
+# What do you want to do upon other op kicking an op?  Separate each command
 # with a new line.
 # Valid commands are:
 #   /msg <nick|channel> <text>
@@ -95,7 +95,7 @@ set mc_po(:config:kick:do) {
 # syntax: <global>|<channel>
 set mc_po(:config:ban:protect) "o|o"
 
-# What do you want to do upon other op banning an op?  Seperate each command
+# What do you want to do upon other op banning an op?  Separate each command
 # with a new line.
 # Valid commands are:
 #   /msg <nick|channel> <text>
@@ -153,7 +153,7 @@ set mc_po(:config:ban:do) {
 # syntax: <global>|<channel>
 set mc_po(:config:deop:protect) "o|o"
 
-# What do you want to do upon other op deopping an op?  Seperate each command
+# What do you want to do upon other op deopping an op?  Separate each command
 # with a new line.
 # Valid commands are:
 #   /msg <nick|channel> <text>
@@ -268,9 +268,9 @@ foreach {temp(name) temp(value)} [array get mc_po :config:*] {
 set mc_po(info:loc) [info script]
 array set mc_po [list \
   script                 "Protect Ops" \
-  version                "v2.0.3" \
+  version                "v2.0.4" \
   svs:script             "protectops" \
-  svs:version            "002000003000" \
+  svs:version            "002000004000" \
   svs:client_version     "v4.0.1" \
   svs:client_svs_version "004000001000" \
   svs:server             "mc.svs.purehype.net" \
@@ -370,6 +370,7 @@ proc mc:po:bind:kick {nick uhost handle channel target reason} {
 }
 proc mc:po:bind:kick_ {nick uhost handle channel target reason} {
   if {[isbotnick $target]} {mc:po:list ial remove "" $channel} \
+  elseif {$nick == $target} {mc:po:list ial schedule_remove $nick $channel 30} \
   else {
     mc:po:list eval $nick $channel kick $target $reason
     mc:po:list ial schedule_remove $target $channel 30
@@ -386,7 +387,9 @@ proc mc:po:bind:mode_ {nick uhost handle channel mode victim} {
   switch -- $mode {
     "+b" {
       foreach temp(user) [mc:po:list ial find $channel $victim] {
-        set temp() [mc:po:list eval $nick $channel ban [lindex $temp(user) 0] \
+        set temp(nick) [lindex $temp(user) 0]
+        if {$temp(nick) == $nick} {continue}
+        set temp() [mc:po:list eval $nick $channel ban $temp(nick) \
           [lindex $temp(user) 1] $victim]
         if {$temp() == "1"} {
           # Action taken.
@@ -394,7 +397,9 @@ proc mc:po:bind:mode_ {nick uhost handle channel mode victim} {
         }
       }
     }
-    "-o" {mc:po:list eval $nick $channel deop $victim}
+    "-o" {
+      if {$victim != $nick} {mc:po:list eval $nick $channel deop $victim}
+    }
   }
 }
 
@@ -1165,6 +1170,11 @@ putloglev o * "$mc_po(script) $mc_po(version) by MC_8 loaded."
 ##
 # History  ( <Fixed by> - [Found by] - <Info> )
 ##
+# v2.0.4 (07.17.03)
+#  MC_8 - blood_x - Bot will no longer take action upon users doing things to
+#                   themselves (such as someone deopping self).
+#                   Bugzilla Bug 305
+#
 # v2.0.3 (07.02.03)
 #  MC_8 - Casper - Fixed 'invalid nick!ident@host.domain: ...'.
 #                  Bugzilla Bug 291
@@ -1218,7 +1228,7 @@ putloglev o * "$mc_po(script) $mc_po(version) by MC_8 loaded."
 #  MC_8 -        - Rewrote all procs, this is pretty much a totally
 #                  rewritten script.
 #  MC_8 -        - Removed comment setting.
-#  MC_8 -        - Reworte all configs settings.
+#  MC_8 -        - Rewrote all configs settings.
 #  MC_8 -        - Upgraded SVS from v1.2 to v2.0.
 #  MC_8 -        - Added ability to set 'exempt' to "" to exempt no
 #                  one.
@@ -1233,7 +1243,7 @@ putloglev o * "$mc_po(script) $mc_po(version) by MC_8 loaded."
 #  MC_8 -        - Specified the note to send to users based on flags,
 #                  instead of a list of handles.  This will make it
 #                  easier to specify who get's notes... on the fly.
-#  MC_8 -        - Replacment variable %victim for ban's was returning
+#  MC_8 -        - Replacement variable %victim for ban's was returning
 #                  %to rather than the victim.
 #  MC_8 -        - Added SVS.
 #  MC_8 - AZ0R0S - Fixed `Tcl error [mc:po:mode]: can't read
@@ -1281,5 +1291,5 @@ putloglev o * "$mc_po(script) $mc_po(version) by MC_8 loaded."
 #  MC_8 - - Added more reaction options.
 #
 # v1.0 (01-16-00)
-#  MC_8 - CrAs|-| - Inital release.
+#  MC_8 - CrAs|-| - Initial release.
 ##

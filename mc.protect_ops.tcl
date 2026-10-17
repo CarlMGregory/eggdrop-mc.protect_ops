@@ -1,5 +1,5 @@
 ##
-# Protect Ops v2.0.5
+# Protect Ops v2.0.6
 #  by MC_8 - Carl M. Gregory <mc8@purehype.net>
 #  This script will only run on eggdrop 1.6.14 or greater.
 #
@@ -277,9 +277,9 @@ foreach {temp(name) temp(value)} [array get mc_po :config:*] {
 set mc_po(info:loc) [info script]
 array set mc_po [list \
   script                 "Protect Ops" \
-  version                "v2.0.5" \
+  version                "v2.0.6" \
   svs:script             "protectops" \
-  svs:version            "002000005000" \
+  svs:version            "002000006000" \
   svs:client_version     "v4.1.2" \
   svs:client_svs_version "004001002000" \
   svs:server             "mc.svs.purehype.net" \
@@ -646,9 +646,9 @@ proc mc:po:list_ {command arg} {
       set reason ""; set banmask ""
       foreach {nick channel type target_nick reason banmask} $args break
 
-      if {$nick != ""} {
-        regexp -- {^(.*)@(.*)$} [getchanhost $nick $channel] -> ident host
-        set handle [nick2hand $nick $channel]
+      if {($nick != "") && ([set uhost [getchanhost $nick]] != "")} {
+        regexp -- {^(.*)@(.*)$} $uhost -> ident host
+        set handle [nick2hand $nick]
       } else {
         set ident ""
         set host ""
@@ -1288,6 +1288,12 @@ putloglev o * "$mc_po(script) $mc_po(version) by MC_8 loaded."
 ##
 # History  ( <Fixed by> - [Found by] - <Info> )
 ##
+# v2.0.6 (10.09.03)
+#  MC_8 - ECS - Fixed 'can't read "ident": no such variable'.  Happens when a
+#               person is kicked by someone that isn't on the channel, such as
+#               chanserv that can be set to not join the channel but still kick
+#               users.
+#
 # v2.0.5 (10.07.03)
 #  MC_8 -            - Upgraded ECS.  v3.0 -> v4.1
 #  MC_8 -            - Upgraded SVS Client.  v4.0.1 -> v4.1.2

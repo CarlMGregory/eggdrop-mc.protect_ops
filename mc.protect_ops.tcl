@@ -1,12 +1,12 @@
 ##
-# Protect Ops v2.0.2
+# Protect Ops v2.0.3
 #  by MC_8 - Carl M. Gregory <mc8@purehype.net>
 #  This script will only run on eggdrop 1.6.13 or greater.
 #
 #    R.I.P. Mom, To always be remembered; Nancy Marie Gregory.
 #
-# My Website - http://mc.purehype.net:81/
-# Have a bug?  http://mc.purehype.net:81/bugzilla/
+# My Website - http://mc.purehype.net/
+# Have a bug?  http://mc.purehype.net/bugzilla/
 ##
 
 ##
@@ -15,6 +15,8 @@
 # This script basically does what 'chanset''s 'protectops' and 'dontkickops'
 # does, but with more options and customized reactions.  A "super protectops" as
 # someone called it, wording in relation to slennox's script "super bitch".
+#
+# This can also be setup to protect others, not just op's.
 ##
 
 ##
@@ -266,9 +268,9 @@ foreach {temp(name) temp(value)} [array get mc_po :config:*] {
 set mc_po(info:loc) [info script]
 array set mc_po [list \
   script                 "Protect Ops" \
-  version                "v2.0.2" \
+  version                "v2.0.3" \
   svs:script             "protectops" \
-  svs:version            "002000002000" \
+  svs:version            "002000003000" \
   svs:client_version     "v4.0.1" \
   svs:client_svs_version "004000001000" \
   svs:server             "mc.svs.purehype.net" \
@@ -632,7 +634,8 @@ proc mc:po:list_ {command args} {
               continue
             }
 
-            set temp(banmask) [mc:po:maskhostbytype [getchanhost $temp(nick)] \
+            set temp(banmask) [mc:po:maskhostbytype \
+              $temp(nick)![getchanhost $temp(nick)] \
               $mc_po(:config:maskhostbytype)]
 
             if {$time == ""} {
@@ -1162,6 +1165,10 @@ putloglev o * "$mc_po(script) $mc_po(version) by MC_8 loaded."
 ##
 # History  ( <Fixed by> - [Found by] - <Info> )
 ##
+# v2.0.3 (07.02.03)
+#  MC_8 - Casper - Fixed 'invalid nick!ident@host.domain: ...'.
+#                  Bugzilla Bug 291
+#
 # v2.0.2
 #  MC_8 - - Upgraded SVS client.  v4.0 -> v4.0.1
 #           Bugzilla Bug 274

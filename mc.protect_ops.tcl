@@ -1,12 +1,15 @@
 ##
-# Protect Ops v2.0.4
+# Protect Ops v2.0.5
 #  by MC_8 - Carl M. Gregory <mc8@purehype.net>
-#  This script will only run on eggdrop 1.6.13 or greater.
+#  This script will only run on eggdrop 1.6.14 or greater.
 #
 #    R.I.P. Mom, To always be remembered; Nancy Marie Gregory.
 #
 # My Website - http://mc.purehype.net/
-# Have a bug?  http://mc.purehype.net/bugzilla/
+# Have a bug or script not working correctly?
+#   http://mc.purehype.net/bugzilla/
+# Have a question?
+#   http://forum.purehype.net/viewforum.php?f=5
 ##
 
 ##
@@ -24,7 +27,7 @@
 ##
 # DCC:
 #
-#   chanset <#channel> <+/->mc.protect_ops
+#   chanset <channel> <+/->mc.protect_ops
 #     This will enable (+) or disable (-) the script for the specific
 #     channel.
 ##
@@ -240,15 +243,15 @@ set mc_po(:config:bigtalker) 0
 #                replacements as does hostname.
 set mc_po(:config:maskhostbytype) 3
 
-
-## SVS Client (Script Version Service) v4.0.1 ##
+## SVS Client (Script Version Service) v4.1.2 ##
 # Once a day, the SVS Client will connect to MC_8's SVS Server to determine if
 # there is a newer version of this script available.  If a newer version is
 # found, the script will be auto updated.
 
-# [0=no/1=yes] Do you want to enable auto updating?
+# [0=no/1=yes] Do you want to enable auto updating?  If you chose to disable
+# auto updating, it will not automatically update the script upon finding a
+# newer version.
 set mc_po(:config:svs:enable) 1
-
 
 #
 ##
@@ -258,9 +261,15 @@ set mc_po(:config:svs:enable) 1
 ##
 #
 
+## SVS insert (pre code)
 #Script:mc_po
-
 catch {unset temp}
+
+foreach temp(bind) [binds mc:po:*] {
+  foreach {temp(1) temp(2) temp(3) temp(4) temp(5)} $temp(bind) break
+  catch {unbind $temp(1) $temp(2) $temp(3) $temp(5)}
+}
+
 set mc_po(info:vars) ""
 foreach {temp(name) temp(value)} [array get mc_po :config:*] {
   lappend mc_po(info:vars) [list $temp(name) $temp(value)]
@@ -268,61 +277,141 @@ foreach {temp(name) temp(value)} [array get mc_po :config:*] {
 set mc_po(info:loc) [info script]
 array set mc_po [list \
   script                 "Protect Ops" \
-  version                "v2.0.4" \
+  version                "v2.0.5" \
   svs:script             "protectops" \
-  svs:version            "002000004000" \
-  svs:client_version     "v4.0.1" \
-  svs:client_svs_version "004000001000" \
+  svs:version            "002000005000" \
+  svs:client_version     "v4.1.2" \
+  svs:client_svs_version "004001002000" \
   svs:server             "mc.svs.purehype.net" \
-  svs:port               "81" \
+  svs:port               "80" \
   svs:get                "/index.tcl"]
 set mc_po(svs:query)    "svs=$mc_po(svs:script)&"
 append mc_po(svs:query) "version=$mc_po(svs:version)&"
-append mc_po(svs:query) "svs_version=$mc_po(svs:client_svs_version)"
+append mc_po(svs:query) \
+  "svs_version=$mc_po(svs:client_svs_version)"
 
-if {![info exists numversion] || ($numversion < "1061300")} {
+if {![info exists numversion] || 
+    ([string range $numversion 0 4] < "10614") ||
+    (([string range $numversion 0 4] == "10614") &&
+     ([string range $numversion 5 6] != "00"))} {
   set temp(tag) "$mc_po(script) $mc_po(version)"
- putloglev o * "$temp(tag) by MC_8 will only work on eggdrop 1.6.13 or greater."
- putloglev o * "$temp(tag)  will not work with eggdrop $version."
- putloglev o * "$temp(tag)  not loaded."
-  return 1
+  putloglev o * \
+    "$temp(tag) by MC_8 will only work on eggdrop 1.6.14 (stable) or greater."
+  putloglev o * "$temp(tag) will not work with eggdrop $version."
+  putloglev o * "$temp(tag) not loaded."
+  uplevel #0 {
+    if {[info exists temp] && ![array exists temp]} {unset temp}
+    set temp(svs_return) [list 0 "Need to upgrade eggdrop."]
+  }; return 1
 }
+## ^
 
 setudef flag mc.protect_ops
 
-# Error system, v3.0
-proc mc:po:error {command error arg} {
-  global mc_po version lastbind errorInfo
-  putloglev o * "Error in script $mc_po(script) $mc_po(version)."
-  putloglev o * "    Error System: v3.0"
-  putloglev o * \
-    "       Last Bind: [expr {[info exists lastbind]?$lastbind:"-NULL-"}]"
-  putloglev o * "         Command: $command"
-  putloglev o * "       Arguments: $arg"
-  putloglev o * "       Error Msg: $error"
-  putloglev o * \
-    "    Egg. Version: [expr {[info exists version]?$version:"-NULL-"}]"
-  putloglev o * "     TCL Version: [info tclversion]"
-  putloglev o * "  TCL Patchlevel: [info patchlevel]"
-  putloglev o * "*** Please submit this bug so MC_8 can fix it.  Visit"
-  putloglev o * \
-    "*** http://mc.purehype.net:81/bugzilla/ to properly report the bug."
-  putloglev o * \
-    "*** Please include ALL info. in the bug report, including the next(s)."
-  error $errorInfo
-}
+# Error Catching System (ECS), v4.1.
+proc mc:po:errchk {command args} {
+  
+  # Enable (1) or disable (0) auto reporting of bugs to mc8@purehype.net.
+  # This setting here for those who want to disable it in fear of privacy
+  # violations.
+  set enable_auto_reporting 1
+  
+  if {![info exists ::lastCommand]} {set ::lastCommand [list]}
+  set ::lastCommand \
+    "[list [list [clock seconds] $command $args]] $::lastCommand"
+  set ::lastCommand [lrange $::lastCommand 0 4]
+  if {![catch {eval $command $args} return]} {return $return}
+  if {$::errorCode == "mc.ecs.done"} {return -errorcode mc.ecs.done -code error}
+  
+  set temp(lastbind) [expr {[info exists ::lastbind]?$::lastbind:"-NULL-"}]
+  set temp(eversion) [expr {[info exists ::version]?$::version:"-NULL-"}]
+  set message "
+    ************************************
+    (ECS 4.1) Error found in TCL script.
+    --------------
+    Script name   : $::mc_po(script)
+    Script version: $::mc_po(version)
+    Egg. Version  : $temp(eversion)
+    TCL Version   : [info tclversion] ([info patchlevel])
+    --------------
+    Last Bind     : $temp(lastbind)
+    Last Commands :"
+  foreach line $::lastCommand {
+    foreach {time command arg} $line break
+    append message "\n        ${time}- $command $arg"
+  }
+  append message "\n    Error stack   :"
+  foreach line [split $::errorInfo \n] {
+    append message "\n        $line"
+  }
+  append message "\n    --------------"
+  
+  set message [lrange [split $message \n] 1 end]
+  set offset [string first * [lindex $message 0]]
+  set new_message [list]
+  foreach line $message {lappend new_message [string range $line $offset end]}
+  set message $new_message
+  
+  if {!$enable_auto_reporting ||
+      [catch {socket -async mc.purehype.net 80} sid]} {
+    foreach line $message {putloglev o * $line}
+    putloglev o * "Submit this bug to http://mc.purehype.net/bugzilla/ . If"
+    putloglev o * "you are experiencing problems with bugzilla, contact MC_8"
+    putloglev o * "via email at mc8@purehype.net. Please include all"
+    putloglev o * "information shown here, in this ECS report."
+    putloglev o * "************************************"
+    return -errorcode mc.ecs.done -code error
+  }
+  fconfigure $sid -blocking 0 -buffering line
 
-proc mc:po:errchk {command arg} {
-  if {![catch {eval $command $arg} return]} {return $return}
-  mc:po:error $command $return $arg
-  return 0
+  set query [list]
+  # This info is passed should I need to hunt down the bot's owner for more
+  # information.
+  lappend query "Admin   : [expr {[info exists ::admin]?$::admin:""}]"
+  lappend query "Owner   : [expr {[info exists ::owner]?$::owner:""}]"
+  lappend query "Botnick : [expr {[info exists ::botnick]?$::botnick:""}]"
+  lappend query "Server  : [expr {[info exists ::server]?$::server:""}]"
+  lappend query "Channels: [join [lsort -dictionary [channels]] ", "]"
+  lappend query ""
+  
+  foreach line $message {lappend query $line}
+  lappend query "************************************"
+  
+  set new_query [list]
+  foreach line $query {
+    regsub -all -- "(\002|\017|\026|\037)" $line "" line
+    regsub -all -- "\003(\[0-9\]\[0-9\]?(,\[0-9\]\[0-9\]?)?)?" $line "" line
+    regsub -all {\%} $line "%25" line
+    set i [string length $line]
+    while {[regexp {[^a-zA-Z0-9%]} $line toh] && ($i >= 0)} {
+      scan "$toh" %c dec
+      regsub -all -- "\\${toh}" $line "%[format %X $dec]" line
+      incr i -1
+    }; lappend new_query $line
+  }; set query $new_query
+  
+  set query "message=[join $query %0a]"
+  puts $sid "POST /report_bug.tcl HTTP/1.0\
+           \nHost: mc.purehype.net:80\
+           \nContent-type: application/x-www-form-urlencoded\
+           \nContent-Length: [expr [string length $query] +2]"
+  puts $sid \n$query
+  close $sid
+
+  foreach line $message {putloglev o * $line}
+  putloglev o * "Automatically sending bug report to MC_8."
+  putloglev o * "If you have a firewall setup, it may block the sending of this"
+  putloglev o * "report. You can check the status of your bug, as soon as MC_8"
+  putloglev o * "adds it, at http://mc.purehype.net/bugzilla/ ."
+  putloglev o * "************************************"
+  
+  return -errorcode mc.ecs.done -code error
 }
 # ^
 
-
 bind join - * mc:po:bind:join
 proc mc:po:bind:join {nick uhost handle channel} {
-  return [mc:po:errchk mc:po:bind:join_ [list $nick $uhost $handle $channel]]
+  return [mc:po:errchk mc:po:bind:join_ $nick $uhost $handle $channel]
 }
 proc mc:po:bind:join_ {nick uhost handle channel} {
   if {![isbotnick $nick]} {mc:po:list ial add $nick $uhost $channel}
@@ -330,7 +419,7 @@ proc mc:po:bind:join_ {nick uhost handle channel} {
 
 bind raw - 315 mc:po:bind:raw
 proc mc:po:bind:raw {from keyword arg} {
-  return [mc:po:errchk mc:po:bind:raw_ [list $from $keyword $arg]]
+  return [mc:po:errchk mc:po:bind:raw_ $from $keyword $arg]
 }
 proc mc:po:bind:raw_ {from keyword arg} {
   set channel [lindex [split $arg] 1]
@@ -345,8 +434,7 @@ proc mc:po:bind:raw_ {from keyword arg} {
 
 bind part - * mc:po:bind:part
 proc mc:po:bind:part {nick uhost handle channel text} {
-  return [mc:po:errchk mc:po:bind:part_ \
-    [list $nick $uhost $handle $channel $text]]
+  return [mc:po:errchk mc:po:bind:part_ $nick $uhost $handle $channel $text]
 }
 proc mc:po:bind:part_ {nick uhost handle channel text} {
   if {[isbotnick $nick]} {mc:po:list ial remove "" $channel} \
@@ -355,8 +443,7 @@ proc mc:po:bind:part_ {nick uhost handle channel text} {
 
 bind sign - * mc:po:bind:sign
 proc mc:po:bind:sign {nick uhost handle channel reason} {
-  return [mc:po:errchk mc:po:bind:sign_ \
-    [list $nick $uhost $handle $channel $reason]]
+  return [mc:po:errchk mc:po:bind:sign_ $nick $uhost $handle $channel $reason]
 }
 proc mc:po:bind:sign_ {nick uhost handle channel reason} {
   if {[isbotnick $nick]} {mc:po:list ial remove "" $channel} \
@@ -366,7 +453,7 @@ proc mc:po:bind:sign_ {nick uhost handle channel reason} {
 bind kick - * mc:po:bind:kick
 proc mc:po:bind:kick {nick uhost handle channel target reason} {
   return [mc:po:errchk mc:po:bind:kick_ \
-    [list $nick $uhost $handle $channel $target $reason]]
+    $nick $uhost $handle $channel $target $reason]
 }
 proc mc:po:bind:kick_ {nick uhost handle channel target reason} {
   if {[isbotnick $target]} {mc:po:list ial remove "" $channel} \
@@ -380,7 +467,7 @@ proc mc:po:bind:kick_ {nick uhost handle channel target reason} {
 bind mode - * mc:po:bind:mode
 proc mc:po:bind:mode {nick uhost handle channel mode victim} {
   return [mc:po:errchk mc:po:bind:mode_ \
-    [list $nick $uhost $handle $channel $mode $victim]]
+    $nick $uhost $handle $channel $mode $victim]
 }
 proc mc:po:bind:mode_ {nick uhost handle channel mode victim} {
   if {[isbotnick $nick] || ($nick == "")} {return 0}
@@ -405,8 +492,7 @@ proc mc:po:bind:mode_ {nick uhost handle channel mode victim} {
 
 bind nick - * mc:po:bind:nick
 proc mc:po:bind:nick {nick uhost handle channel newnick} {
-  return [mc:po:errchk mc:po:bind:nick_ \
-    [list $nick $uhost $handle $channel $newnick]]
+  return [mc:po:errchk mc:po:bind:nick_ $nick $uhost $handle $channel $newnick]
 }
 proc mc:po:bind:nick_ {nick uhost handle channel newnick} {
   if {![isbotnick $newnick]} {
@@ -417,9 +503,10 @@ proc mc:po:bind:nick_ {nick uhost handle channel newnick} {
 
 
 proc mc:po:list {command {args ""}} {
-  return [mc:po:errchk mc:po:list_ "[list $command] $args"]
+  return [mc:po:errchk mc:po:list_ $command $args]
 }
-proc mc:po:list_ {command args} {
+proc mc:po:list_ {command arg} {
+  set args $arg
   global mc_po
   switch -- $command {
 
@@ -432,14 +519,15 @@ proc mc:po:list_ {command args} {
 
         "add" {
           # mc:po:list ial add <nick> <uhost> <channel>
-          mc:po:unlist $args nick uhost channel
+          foreach {nick uhost channel} $args break
           mc:po:list ial remove $nick $channel
           lappend mc_po(:ial:) [list $nick $uhost $channel]
         }
 
         "remove" {
           # mc:po:list ial remove [nick] [channel]
-          mc:po:unlist $args {nick ""} {channel ""}
+          set nick ""; set channel ""
+          foreach {nick channel} $args break
 
           set temp(new_list) ""
           foreach temp(entry) [mc:po:list ial list] {
@@ -458,7 +546,7 @@ proc mc:po:list_ {command args} {
 
         "find" {
           # mc:po:list ial find <channel> <nick!user@host*>
-          mc:po:unlist $args channel nuhost_masked
+          foreach {channel nuhost_masked} $args break
           set nuhost_masked [string tolower $nuhost_masked]
 
           set temp(return) ""
@@ -474,7 +562,8 @@ proc mc:po:list_ {command args} {
 
         "list" {
           # mc:po:list ial list [channel]
-          mc:po:unlist $args {channel ""}
+          set channel ""
+          foreach channel $args break
 
           if {$channel == ""} {return $mc_po(:ial:)}
 
@@ -490,7 +579,7 @@ proc mc:po:list_ {command args} {
 
         "schedule_remove" {
           # mc:po:list ial schedule_remove <nick> <channel> <seconds>
-          mc:po:unlist $args nick channel time
+          foreach {nick channel time} $args break
           set nick [string tolower $nick]
           set channel [string tolower $channel]
 
@@ -507,7 +596,7 @@ proc mc:po:list_ {command args} {
 
         "kill_schedule" {
           # mc:po:list ial kill_schedule <nick> <channel>
-          mc:po:unlist $args nick channel
+          foreach {nick channel} $args break
           set nick [string tolower $nick]
           set channel [string tolower $channel]
 
@@ -527,11 +616,11 @@ proc mc:po:list_ {command args} {
     "is_protected" {
       # mc:po:list is_protected <nick> <handle> <channel> <type> \
       #   <punisher_handle>
-      mc:po:unlist $args nick handle channel type punisher_handle
+      foreach {nick handle channel type punisher_handle} $args break
       global botnet-nick
 
       if {
-        ([mc:po:chanflag $channel mc.protect_ops]) &&
+        ([channel get $channel mc.protect_ops]) &&
         ((($nick != "") && ([onchan $nick $channel])) ||
          ($nick == "")) &&
         ($punisher_handle != ${botnet-nick}) &&
@@ -554,7 +643,8 @@ proc mc:po:list_ {command args} {
       # mc:po:list eval <nick> <channel> ban  <target_nick> <target_uhost> \
       #   <banmask>
       global botnick botnet-nick
-      mc:po:unlist $args nick channel type target_nick {reason ""} {banmask ""}
+      set reason ""; set banmask ""
+      foreach {nick channel type target_nick reason banmask} $args break
 
       if {$nick != ""} {
         regexp -- {^(.*)@(.*)$} [getchanhost $nick $channel] -> ident host
@@ -616,10 +706,8 @@ proc mc:po:list_ {command args} {
             putserv "NOTICE $temp(to) :[join [lrange $temp(args) 1 end]]"
            }
           "/ban" {
-            set temp(channel) [lindex $temp(args) 0]
-            set temp(nick) [lindex $temp(args) 1]
-            set temp(time) [lindex $temp(args) 2]
-            set temp(reason) [lindex $temp(args) 3]
+            foreach {temp(channel) temp(nick) temp(time) temp(reason)} \
+              $temp(args) break
 
             if {$temp(nick) == ""} {continue} ;# Server action?
 
@@ -643,7 +731,7 @@ proc mc:po:list_ {command args} {
               $temp(nick)![getchanhost $temp(nick)] \
               $mc_po(:config:maskhostbytype)]
 
-            if {$time == ""} {
+            if {$temp(time) == ""} {
               putserv "MODE $temp(channel) +b $temp(banmask)"
               continue
             }
@@ -795,7 +883,7 @@ proc mc:po:list_ {command args} {
 
 
 ## More Tools quick procs.
-## -- http://mc.purehype.net:81/script_info.tcl?script=moretools
+## -- http://mc.purehype.net/script_info.tcl?script=moretools
 
 # badargs <args> <min_llength> <max_llength|end> <argNames>
 #     version:
@@ -835,47 +923,12 @@ proc mc:po:badargs {{args ""}} {
   }; return 0
 }
 
-# unlist <argsList> [varName1] [varName2] ... [varNameN]
-#     version:
-#       v1.0
-proc mc:po:unlist {{args ""}} {
-  mc:po:badargs $args 1 end "argsList ?varName varName ...?"
-  set argList [lindex $args 0]
-  set argList [expr {([catch {llength $argList}])?[split $argList]:$argList}]
-  set argNames [lrange $args 1 end]
-  if {![llength $argNames]} {
-    return [expr {(![catch {llength $argList}])?
-      [join $argList]:$argList}]
-  }
-  for {set index 0} {$index < [llength $argNames]} {incr index 1} {
-    set argName     [lindex $argNames $index]
-    set argListItem [lindex $argList  $index]
-
-    set argName_ [expr {([catch {llength $argName}])?[split $argName]:$argName}]
-    set setTo   [lindex $argName_ 1]
-    set argName [lindex $argName_ 0]
-
-    if {$argName == ""} {continue}
-
-    upvar 1 $argName var
-
-    if {[expr $index+1] > [llength $argList]} {
-      if {[llength $argName_] == "2"} {set var $setTo}
-    } else {
-      if {$argName == "args"} {
-        set var [lrange $argList $index end]
-        incr index [expr [llength $var]-1]
-      } else {set var $argListItem}
-    }
-  }; return $index
-}
-
 # 2list <text>
 #     version:
-#       v1.0
+#       v1.0+no_unlist
 proc mc:po:2list {{args ""}} {
   mc:po:badargs $args 1 1 "text"
-  mc:po:unlist $args text
+  foreach text $args break
 
   return [expr {([catch {llength $text}])?[split $text]:$text}]
 }
@@ -919,10 +972,11 @@ proc mc:po:replace {{args ""}} {
 
 # maskhostbytype <nick!ident@host.domain> [type]
 #     version:
-#       v2.1
+#       v2.1+no_unlist
 proc mc:po:maskhostbytype {{args ""}} {
   mc:po:badargs $args 1 2 "nick!ident@host.domain ?type?"
-  mc:po:unlist $args nuhost type
+  set type ""
+  foreach {nuhost type} $args break
 
   set type [expr {($type == "")?5:$type}]
   if {![regexp -- {^1?[0-9]$} $type]} {
@@ -979,27 +1033,7 @@ proc mc:po:maskhostbytype {{args ""}} {
   return $nick!$ident@$host
 }
 
-# chanflag <channel> <flag>
-#     version:
-#       v3.1
-proc mc:po:chanflag {{args ""}} {
-  mc:po:badargs $args 2 2 "channel flag"
-  mc:po:unlist $args channel flag
-
-  if {![validchan $channel]} {error "no such channel record"}
-
-  # Try the 'channel' commands' 'get' option first, it's faster since it is
-  # written in C by the eggdrop development team.
-  if {![catch {channel get $channel $flag} output]} {return $output}
-
-  set temp(chaninfo) [string tolower [channel info $channel]]
-  if {[lsearch -exact $temp(chaninfo) +[string tolower $flag]] >= "0"} {
-    return 1
-  }; return 0
-}
-
 ## End of More Tools quick procs.
-
 
 ## SVS insert (post code)
 if {![info exists mc_po(:config:svs:enable)] ||
@@ -1012,34 +1046,52 @@ proc mc:po:do_svs {{args ""}} {
   global mc_po
   set query $mc_po(svs:query)
   if {$args == ""} {append query "&log=0"}
-  set index [connect $mc_po(svs:server) $mc_po(svs:port)]
-  putdcc $index "GET $mc_po(svs:get)?$query HTTP/1.0\n"
-  putdcc $index "Host: $mc_po(svs:server):$mc_po(svs:port)\n\n"
-  control $index mc:po:svs_talk
+  if {[catch {connect $mc_po(svs:server) $mc_po(svs:port)} ind]} {
+    set temp(1) "SVS problem connecting to $mc_po(svs:server)"
+    set temp(2) "on port $mc_po(svs:port)"
+    putloglev d * "$mc_po(script): $temp(1) $temp(2):  $ind"
+    return 0
+  }
+  putdcc $ind "GET $mc_po(svs:get)?$query HTTP/1.0\n"
+  putdcc $ind "Host: $mc_po(svs:server):$mc_po(svs:port)\n\n"
+  control $ind mc:po:svs_talk
+}
+
+proc mc:po:svs_memory {action} {
+  global mc_po
+  switch -- $action {
+    
+    "setup" {
+      upvar index index
+      foreach _item [list header memory rfc_memory] {
+        upvar $_item $_item
+        set $_item [list svs $_item $index]
+      }
+    }
+    
+    "remove" {
+      upvar index index
+      mc:po:svs_memory setup
+      catch {unset mc_po($header)}
+      catch {unset mc_po($memory)}
+      foreach _item [array names mc_po $rfc_memory:*] {unset mc_po($_item)}
+    }
+
+  }
 }
 
 proc mc:po:svs_talk {index text} {
   global mc_po
-  set header [list svs header $index]
-  set memory [list svs memory $index]
+  mc:po:svs_memory setup
   if {$text == ""} {
-    catch {unset mc_po($header)}
-    catch {unset mc_po($memory)}
+    mc:po:svs_memory remove
     return 1
   }
   set text [split $text]
   set rfc [lindex $text 0]
   set text [join [lrange $text 1 end]]
-  if {![info exist mc_po($header)]} {
-    if {$rfc == "002"} {
-      # Done with http header and useless information.
-      if {!$mc_po(:config:svs:enable)} {
-        catch {unset mc_po($header)}
-        catch {unset mc_po($memory)}
-        return 1
-      }
-      set mc_po($header) 1
-    }
+  if {![info exists mc_po($header)]} {
+    if {$rfc == "002"} {set mc_po($header) 1}
     return 0
   }
   switch -- $rfc {
@@ -1050,22 +1102,61 @@ proc mc:po:svs_talk {index text} {
 
     010 {
       if {$text != $mc_po(svs:script)} {
-        set temp(1) "wanted $mc_po(svs:script), got $temp(text:0)"
+        set temp(1) "wanted $mc_po(svs:script), got $text"
         putloglev d * "$mc_po(script): SVS Error: $temp(1)"
-        catch {unset mc_po($header)}
-        catch {unset mc_po($memory)}
+        mc:po:svs_memory remove
         return 1
       }
+      if {$mc_po(:config:svs:enable)} {return 0}
+      set mc_po($rfc_memory:[string index $rfc end]) $text
       return 0
     }
 
-    011 {return 0}
-    012 {return 0}
-    013 {return 0}
-    014 {return 0}
-    017 {return 0}
+    011 {
+      if {$mc_po(:config:svs:enable)} {return 0}
+      set mc_po($rfc_memory:[string index $rfc end]) $text
+      return 0
+    }
+      
+    012 {
+      if {$mc_po(:config:svs:enable)} {return 0}
+      set mc_po($rfc_memory:[string index $rfc end]) $text
+      return 0
+    }
+    
+    013 {
+      if {$mc_po(:config:svs:enable)} {return 0}
+      set mc_po($rfc_memory:[string index $rfc end]) $text
+      return 0
+    }
+    
+    014 {
+      if {$mc_po(:config:svs:enable)} {return 0}
+      set mc_po($rfc_memory:[string index $rfc end]) $text
+      return 0
+    }
+    
+    017 {
+      if {$mc_po(:config:svs:enable)} {return 0}
+      if {$text == ""} {
+        set text "Newer version of this script exists."
+      }
+      foreach number [list 0 1 2 3 4] {
+        if {![info exists mc_po($rfc_memory:$number)]} {continue}
+        regsub -all -- %$number $text $mc_po($rfc_memory:$number) text
+      }
+      putloglev o * "SVS, $mc_po(script): $text"
+      mc:po:svs_memory remove
+      return 1
+    }
 
     004 {
+      # Quit.
+      if {!$mc_po(:config:svs:enable)} {
+        mc:po:svs_memory remove
+        return 1
+      }
+        
       if {[info exists mc_po($memory)]} {
         set file $mc_po(info:loc)~new
         set temp(vars) $mc_po(info:vars)
@@ -1079,12 +1170,13 @@ proc mc:po:svs_talk {index text} {
               set item_name [lindex $item 0]
               set item_value [lindex $item 1]
               if {$name != $item_name} {continue}
-              set index [lsearch -exact $temp(vars) $item]
-              set temp(vars) [lreplace $temp(vars) $index $index]
+              set lsearch_index [lsearch -exact $temp(vars) $item]
+              set temp(vars) \
+                [lreplace $temp(vars) $lsearch_index $lsearch_index]
               puts $io [list set mc_po($name) $item_value]
               if {$type == "\{"} {
                 while {1} {
-                  if {[regexp -- {\}(?:;* *(.*))?} $line -> extra]} {
+                  if {[regexp -- {\}(?:[; ][; ]*(.*))?} $line -> extra]} {
                     if {$extra != ""} {
                       puts $io $extra
                     }
@@ -1097,8 +1189,8 @@ proc mc:po:svs_talk {index text} {
               } elseif {$type == "\""} {
                 regsub -- {"} $line "" line
                 while {1} {
-                  if {[regexp -- {[^\\]"(?:;* *(.*))?} $line -> extra] ||
-                      [regexp -- {^"(?:;* *(.*))?} $line -> extra]} {
+                  if {[regexp -- {[^\\]"(?:[; ][; ]*(.*))?} $line -> extra] ||
+                      [regexp -- {^"(?:[; ][; ]*(.*))?} $line -> extra]} {
                     if {$extra != ""} {
                       puts $io $extra
                     }
@@ -1119,20 +1211,45 @@ proc mc:po:svs_talk {index text} {
         close $io
         set file $mc_po(info:loc)
         putloglev o * "$mc_po(script): Auto update testing new script..."
-        if {[catch {uplevel "source $file~new"} error]} {
+        if {[catch {uplevel "source $file~new"}]} {
           file delete -force -- $file~new
-          putloglev o * "$mc_po(script): Auto update failed: $error"
-          putloglev o * "$mc_po(script): Auto update loading previous script."
+          putloglev o * "$mc_po(script): Auto update failed:"
+          putloglev o * $::errorInfo
+          putloglev o * \
+            "$mc_po(script): Loading previous script version..."
           uplevel "source $file"
         } else {
-          file rename -force -- $file~new $file
-          putloglev o * "$mc_po(script): Auto update test good, reloading."
-          uplevel "source $file"
+          upvar #0 temp upvar_temp
+          if {[info exists upvar_temp(svs_return)]} {
+            set temp(return_code) [lindex $upvar_temp(svs_return) 0]
+            set temp(return_arg) [lindex $upvar_temp(svs_return) 1]
+            
+            if {!$temp(return_code)} {
+              file delete -force -- $file~new
+              set temp() "message from new version: $temp(return_arg)"
+              putloglev o * "$mc_po(script): Auto update failed, $temp()"
+              putloglev o * \
+                "$mc_po(script): Loading previous script version..."
+              uplevel "source $file"
+            } else {
+              file rename -force -- $file~new $file
+              set temp() "good, message from new version: $temp(return_arg)"
+              putloglev o * "$mc_po(script): Auto update test $temp()"
+              putloglev o * \
+                "$mc_po(script): Moving and reloading new version..."
+              uplevel "source $file"
+            }
+          } else {
+            file rename -force -- $file~new $file
+            putloglev o * "$mc_po(script): Auto update test good."
+            putloglev o * \
+              "$mc_po(script): Moving and reloading new version..."
+            uplevel "source $file"
+          }
         }
       }
 
-      catch {unset mc_po($header)}
-      catch {unset mc_po($memory)}
+      mc:po:svs_memory remove
       return 1
     }
 
@@ -1143,23 +1260,24 @@ proc mc:po:svs_talk {index text} {
       set temp(cache) "$temp(host) at $temp(port)"
       putloglev d * \
         "$mc_po(script): SVS is being redirected to $temp(cache)."
-      utimer 5 [list mc:po:do_svs_ $temp(host) $temp(port) $temp(get)]
-      catch {unset mc_po($header)}
-      catch {unset mc_po($memory)}
+      utimer 6 [list mc:po:do_svs_ $temp(host) $temp(port) $temp(get)]
+      mc:po:svs_memory remove
       return 1
     }
 
     300 {
-      lappend mc_po($memory) $text
-      return 0
+      if {$mc_po(:config:svs:enable)} {
+        lappend mc_po($memory) $text
+      }; return 0
     }
 
   }
 }
 catch {unset index}
-if {![info exists mc_loaded]} {set mc_loaded(scripts) ""}
+if {![info exists mc_loaded]} {set mc_loaded(scripts) [list]}
+if {![array exists mc_loaded]} {unset mc_loaded; set mc_loaded(scripts) [list]}
 set index [lsearch -exact $mc_loaded(scripts) mc_po]
-lreplace mc_loaded(scripts) $index $index mc_po
+set mc_loaded(scripts) [lreplace $mc_loaded(scripts) $index $index mc_po]
 ## ^
 
 putloglev o * "$mc_po(script) $mc_po(version) by MC_8 loaded."
@@ -1170,6 +1288,17 @@ putloglev o * "$mc_po(script) $mc_po(version) by MC_8 loaded."
 ##
 # History  ( <Fixed by> - [Found by] - <Info> )
 ##
+# v2.0.5 (10.07.03)
+#  MC_8 -            - Upgraded ECS.  v3.0 -> v4.1
+#  MC_8 -            - Upgraded SVS Client.  v4.0.1 -> v4.1.2
+#  MC_8 -            - Removed `chanflag` and using `channel get` instead.
+#                      Increases function's speed by ~2%.
+#  MC_8 -            - Removed `unlist` and using a `foreach` format that I
+#                      think slennox told me about.  Increases function's speed
+#                      by ~41%.
+#  MC_8 - Deathangel - Fixed 'can't read "time": no such variable'.
+#                      Bugzilla Bug 324 
+#
 # v2.0.4 (07.17.03)
 #  MC_8 - blood_x - Bot will no longer take action upon users doing things to
 #                   themselves (such as someone deopping self).

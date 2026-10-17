@@ -1,5 +1,5 @@
 ##
-# Protect Ops v2.0
+# Protect Ops v2.0.1
 #  by MC_8 - Carl M. Gregory <mc8@purehype.net>
 #  This script will only run on eggdrop 1.6.13 or greater.
 #
@@ -266,9 +266,9 @@ foreach {temp(name) temp(value)} [array get mc_po :config:*] {
 set mc_po(info:loc) [info script]
 array set mc_po [list \
   script                 "Protect Ops" \
-  version                "v2.0" \
+  version                "v2.0.1" \
   svs:script             "protectops" \
-  svs:version            "002000000000" \
+  svs:version            "002000001000" \
   svs:client_version     "v4.0" \
   svs:client_svs_version "004000000000" \
   svs:server             "mc.svs.purehype.net" \
@@ -380,7 +380,7 @@ proc mc:po:bind:mode {nick uhost handle channel mode victim} {
     [list $nick $uhost $handle $channel $mode $victim]]
 }
 proc mc:po:bind:mode_ {nick uhost handle channel mode victim} {
-  if {[isbotnick $nick]} {return 0}
+  if {[isbotnick $nick] || ($nick == "")} {return 0}
   switch -- $mode {
     "+b" {
       foreach temp(user) [mc:po:list ial find $channel $victim] {
@@ -1146,6 +1146,10 @@ putloglev o * "$mc_po(script) $mc_po(version) by MC_8 loaded."
 ##
 # History  ( <Fixed by> - [Found by] - <Info> )
 ##
+# v2.0.1 (02.25.03)
+#  MC_8 - - Fixed 'Nickname not on channel; /deop #channel' upon server actions.
+#           Bugzilla Bug 265
+#
 # v2.0 (02.21.03)
 #  MC_8 -     - Upgraded SVS client.  v2.0 -> v4.0
 #  MC_8 - Tux - Fixed 'missing "'.
